@@ -205,14 +205,11 @@ export const useGameStore = create<GameStore>((set, get) => {
       }, Math.max(300, s.deadline - Date.now()));
 
       if (target?.isCPU && target.alive) {
-        // A finished CPU usually points out to escape; otherwise it takes the hit.
-        const escape = s.wouldKill ? Math.random() < 0.75 : Math.random() < 0.4;
+        // A finished CPU defends with a shield if it has one, else takes the hit.
         cpuTimer = setTimeout(() => {
           void applyAndPersist((st) => {
             if (st.phase !== "stella" || st.stella?.targetId !== target.id) return st;
-            return escape
-              ? applyAction(st, { type: "call_out" }, target.id)
-              : applyAction(st, { type: "defend", cardId: null }, target.id);
+            return applyAction(st, { type: "defend", cardId: chooseCpuDefense(st, target.id) }, target.id);
           });
         }, 700);
         return;

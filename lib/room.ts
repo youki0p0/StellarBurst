@@ -519,23 +519,22 @@ export function applyAction(
   // targeted star only.
   if (action.type === "defend") {
     if (!state.pending || state.pending.targetId !== actorId) return input;
-    // During a STELLA window, defending/taking instead of escaping closes it.
+    // During a STELLA window, defending/taking closes it. The target resolves
+    // the flare normally — there is no special "point out to escape".
     if (state.phase === "stella" && state.stella) {
-      return closeStella(state, "defend", action.cardId);
+      return closeStella(state, action.cardId);
     }
     if (state.phase !== "defense") return input;
     return resolveDefense(state, action.cardId);
   }
 
-  // 指摘 — point out the open STELLA finish.
+  // 指摘 — point out the open STELLA finish (bystanders only).
   if (action.type === "call_out") {
     const s = state.stella;
     if (state.phase !== "stella" || !s || !state.pending) return input;
-    if (actorId === s.attackerId) return input; // the caller can't point out their own
-    if (actorId === s.targetId) {
-      // The targeted star points out → escape: nullify + buff, caller penalised.
-      return closeStella(state, "escape");
-    }
+    // The caller can't point out their own finish; the target can't escape by
+    // pointing out — they must defend or take the hit like any other attack.
+    if (actorId === s.attackerId || actorId === s.targetId) return input;
     // A bystander points out; the first is the catcher. The window stays open
     // (and whether they were right isn't revealed until it resolves).
     if (s.pointedBy.includes(actorId)) return input;
@@ -740,75 +739,64 @@ function callerPenalty(state: RoomState, attacker: Player, s: NonNullable<RoomSt
 }
 
 /**
- * Close an open STELLA window.
- * - "escape": the targeted star pointed out → fully nullify + buff it.
- * - "defend": the target defended/took it (or the window timed out) → resolve a
- *   single flare hit (no chain/pass forwarding during a finish).
- * Either way, judge the bystander point-outs and the caller, then end the turn.
+ * Close an open STELLA window: the target defended / took the hit (or it timed
+ * out). The flare resolves as a single hit (no chain / pass forwarding during a
+ * finish, and no special escape for the target). Then judge the bystander
+ * point-outs and the caller, and end the turn.
  */
-function closeStella(state: RoomState, mode: "escape" | "defend", cardId?: string | null): RoomState {
+function closeStella(state: RoomState, cardId: string | null): RoomState {
   const s = state.stella!;
   const pending = state.pending!;
   const attacker = getPlayer(state, pending.attackerId)!;
   const target = getPlayer(state, pending.targetId)!;
 
-  if (mode === "escape") {
+  const chosen = cardId ? (state.hands[target.id] ?? []).find((c) => c.id === cardId) : undefined;
+  let defenseCard: Card | null = null;
+  if (
+    chosen &&
+    chosen.kind === "defense" &&
+    chosen.defense !== "pass" && // pass-forwarding is disabled mid-finish
+    canUseDefense(target) &&
+    (pending.card.fatal || canDefend(pending.card, chosen))
+  ) {
+    defenseCard = chosen;
+  }
+  const result = resolveAttack(pending.card, defenseCard, target.hp);
+  if (defenseCard && result.defenseConsumed) removeCard(state, target.id, defenseCard.id);
+
+  if (result.nullified) {
     pushEvent(state, {
       type: "defend",
       actorId: target.id,
-      targetId: attacker.id,
-      key: "log.stellaEscape",
-      params: { name: target.name },
+      key: "log.negate",
+      params: { target: target.name, card: defenseCard ? cardNameKey(defenseCard) : "" },
     });
-    grantBuff(state, target);
+  } else if (result.damageToAttacker > 0) {
+    dealDamage(state, attacker.id, result.damageToAttacker);
+    pushEvent(state, {
+      type: "reflect",
+      actorId: target.id,
+      targetId: attacker.id,
+      key: "log.reflect",
+      params: { target: target.name, attacker: attacker.name, dmg: result.damageToAttacker },
+    });
+  } else if (defenseCard) {
+    pushEvent(state, {
+      type: "defend",
+      actorId: target.id,
+      key: "log.block",
+      params: { target: target.name, card: cardNameKey(defenseCard), dmg: 0 },
+    });
   } else {
-    const chosen = cardId ? (state.hands[target.id] ?? []).find((c) => c.id === cardId) : undefined;
-    let defenseCard: Card | null = null;
-    if (
-      chosen &&
-      chosen.kind === "defense" &&
-      canUseDefense(target) &&
-      (pending.card.fatal || canDefend(pending.card, chosen))
-    ) {
-      defenseCard = chosen;
-    }
-    const result = resolveAttack(pending.card, defenseCard, target.hp);
-    if (defenseCard && result.defenseConsumed) removeCard(state, target.id, defenseCard.id);
-
-    if (result.nullified) {
+    const absorbed = takeFlare(state, target.id, result.damageToTarget);
+    if (!absorbed) {
       pushEvent(state, {
-        type: "defend",
-        actorId: target.id,
-        key: "log.negate",
-        params: { target: target.name, card: defenseCard ? cardNameKey(defenseCard) : "" },
+        type: "attack",
+        actorId: attacker.id,
+        targetId: target.id,
+        key: "log.takeDamage",
+        params: { target: target.name, dmg: result.damageToTarget },
       });
-    } else if (result.damageToAttacker > 0) {
-      dealDamage(state, attacker.id, result.damageToAttacker);
-      pushEvent(state, {
-        type: "reflect",
-        actorId: target.id,
-        targetId: attacker.id,
-        key: "log.reflect",
-        params: { target: target.name, attacker: attacker.name, dmg: result.damageToAttacker },
-      });
-    } else if (defenseCard) {
-      pushEvent(state, {
-        type: "defend",
-        actorId: target.id,
-        key: "log.block",
-        params: { target: target.name, card: cardNameKey(defenseCard), dmg: 0 },
-      });
-    } else {
-      const absorbed = takeFlare(state, target.id, result.damageToTarget);
-      if (!absorbed) {
-        pushEvent(state, {
-          type: "attack",
-          actorId: attacker.id,
-          targetId: target.id,
-          key: "log.takeDamage",
-          params: { target: target.name, dmg: result.damageToTarget },
-        });
-      }
     }
   }
 
@@ -822,7 +810,7 @@ function closeStella(state: RoomState, mode: "escape" | "defend", cardId?: strin
 /** Host-driven: resolve an expired STELLA window as the target taking the hit. */
 export function resolveStellaTimeout(state: RoomState): RoomState {
   if (state.phase !== "stella" || !state.stella || !state.pending) return state;
-  return closeStella(state, "defend", null);
+  return closeStella(state, null);
 }
 
 function resolveDefense(state: RoomState, cardId: string | null): RoomState {

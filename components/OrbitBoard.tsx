@@ -66,15 +66,15 @@ export function OrbitBoard(props: OrbitBoardProps) {
       >
         <div className="absolute h-12 w-12 rounded-full bg-neon-gold/80 shadow-neon blur-[1px]" />
         <div className="absolute h-7 w-7 rounded-full bg-neon-gold animate-floaty" />
-        {/* Direction arrow */}
+        {/* Direction: a glowing star orbits the core — clockwise (↻) when the
+            orbit direction is +1, counter-clockwise (↺) when reversed. */}
         <div
           className={[
-            "absolute flex h-16 w-16 items-center justify-center text-neon-cyan/80 text-xl",
-            "animate-[spin_6s_linear_infinite]",
-            direction === -1 ? "[animation-direction:reverse] scale-x-[-1]" : "",
+            "absolute h-16 w-16 animate-[spin_5s_linear_infinite]",
+            direction === -1 ? "[animation-direction:reverse]" : "",
           ].join(" ")}
         >
-          <span className="-translate-y-7 select-none">↻</span>
+          <div className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 rounded-full bg-neon-cyan shadow-[0_0_10px_3px_rgba(34,211,238,0.95)]" />
         </div>
       </div>
 
