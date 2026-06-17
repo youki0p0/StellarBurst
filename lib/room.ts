@@ -6,6 +6,7 @@ import {
   mulberry32,
   shuffle,
 } from "./cards";
+import { cardNameKey } from "./i18n";
 import {
   applyDamage,
   applyHeal,
@@ -110,7 +111,7 @@ export function addPlayer(state: RoomState, id: string, name: string): RoomState
   }
   if (state.players.length >= MAX_PLAYERS) return state;
   state.players.push(makePlayer(id, name));
-  pushEvent(state, { type: "info", message: `${name} joined the room.` });
+  pushEvent(state, { type: "info", key: "log.joined", params: { name } });
   return bump(state);
 }
 
@@ -175,7 +176,7 @@ export function startGame(state: RoomState): RoomState {
   state.winnerId = null;
   state.pending = null;
   state.phase = "action";
-  pushEvent(state, { type: "info", message: "The battle begins!" });
+  pushEvent(state, { type: "info", key: "log.begin" });
   startNextTurn(state);
   return bump(state);
 }
@@ -196,7 +197,7 @@ export function resetToLobby(state: RoomState): RoomState {
   state.pending = null;
   state.winnerId = null;
   state.log = [];
-  pushEvent(state, { type: "info", message: "Returned to the lobby for a rematch." });
+  pushEvent(state, { type: "info", key: "log.rematch" });
   return bump(state);
 }
 
@@ -215,7 +216,8 @@ function reap(state: RoomState, player: Player): void {
     pushEvent(state, {
       type: "eliminate",
       actorId: player.id,
-      message: `${player.name} has been defeated!`,
+      key: "log.eliminate",
+      params: { name: player.name },
     });
   }
 }
@@ -229,7 +231,8 @@ function checkWin(state: RoomState): void {
     pushEvent(state, {
       type: "win",
       actorId: winner,
-      message: `${p?.name ?? "A challenger"} is the last one standing!`,
+      key: "log.win",
+      params: { name: p?.name ?? "?" },
     });
   }
 }
@@ -244,7 +247,8 @@ function runBeginEffects(state: RoomState, p: Player): void {
     pushEvent(state, {
       type: "slip",
       actorId: p.id,
-      message: `${p.name} takes ${dmg} slip damage.`,
+      key: "log.slipTick",
+      params: { name: p.name, dmg },
     });
     if (p.effects.slip.turnsLeft <= 0) p.effects.slip = null;
   }
@@ -274,7 +278,8 @@ function startNextTurn(state: RoomState): void {
       pushEvent(state, {
         type: "skip",
         actorId: p.id,
-        message: `${p.name}'s turn was skipped.`,
+        key: "log.skipped",
+        params: { name: p.name },
       });
       continue;
     }
@@ -315,7 +320,8 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
       pushEvent(state, {
         type: "heal",
         actorId: actor.id,
-        message: `${actor.name} heals ${amount} HP.`,
+        key: "log.heal",
+        params: { name: actor.name, amt: amount },
       });
       break;
     }
@@ -337,7 +343,8 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
       pushEvent(state, {
         type: "special",
         actorId: actor.id,
-        message: `${actor.name} unleashes Chaos Swap — everyone's hands are reshuffled!`,
+        key: "log.shuffle",
+        params: { name: actor.name },
       });
       break;
     }
@@ -351,14 +358,16 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
           type: "special",
           actorId: actor.id,
           targetId: target.id,
-          message: `${actor.name} staggers ${target.name} — their next turn will be skipped!`,
+          key: "log.skipOk",
+          params: { name: actor.name, target: target.name },
         });
       } else {
         pushEvent(state, {
           type: "special",
           actorId: actor.id,
           targetId: target.id,
-          message: `${actor.name} tried to stagger ${target.name}, but it failed.`,
+          key: "log.skipFail",
+          params: { name: actor.name, target: target.name },
         });
       }
       break;
@@ -371,7 +380,8 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
         type: "special",
         actorId: actor.id,
         targetId: target.id,
-        message: `${actor.name} cripples ${target.name} — no defense for 3 turns!`,
+        key: "log.cripple",
+        params: { name: actor.name, target: target.name },
       });
       break;
     }
@@ -383,7 +393,8 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
         type: "special",
         actorId: actor.id,
         targetId: target.id,
-        message: `${actor.name} poisons ${target.name} for 3 turns.`,
+        key: "log.slip",
+        params: { name: actor.name, target: target.name },
       });
       break;
     }
@@ -421,7 +432,8 @@ export function applyAction(
       pushEvent(state, {
         type: "info",
         actorId: actor.id,
-        message: `${actor.name} passes.`,
+        key: "log.pass",
+        params: { name: actor.name },
       });
       endTurn(state, actorId);
       return bump(state);
@@ -462,9 +474,13 @@ export function applyAction(
         type: "attack",
         actorId: actor.id,
         targetId: target.id,
-        message: card.fatal
-          ? `${actor.name} launches a FATAL ${card.name} at ${target.name}!`
-          : `${actor.name} attacks ${target.name} with ${card.name} (${card.damage}).`,
+        key: card.fatal ? "log.attackFatal" : "log.attack",
+        params: {
+          name: actor.name,
+          target: target.name,
+          card: cardNameKey(card),
+          dmg: card.damage ?? 0,
+        },
       });
       // If the target can't possibly respond, auto-resolve as "take it".
       if (!canRespondToAttack(state, target.id)) {
@@ -516,7 +532,8 @@ function resolveDefense(state: RoomState, cardId: string | null): RoomState {
     pushEvent(state, {
       type: "defend",
       actorId: target.id,
-      message: `${target.name} spends ${defenseCard?.name} to negate the fatal blow!`,
+      key: "log.negate",
+      params: { target: target.name, card: defenseCard ? cardNameKey(defenseCard) : "" },
     });
   } else if (result.damageToAttacker > 0) {
     dealDamage(state, attacker.id, result.damageToAttacker);
@@ -524,14 +541,16 @@ function resolveDefense(state: RoomState, cardId: string | null): RoomState {
       type: "reflect",
       actorId: target.id,
       targetId: attacker.id,
-      message: `${target.name} reflects ${result.damageToAttacker} damage back at ${attacker.name}!`,
+      key: "log.reflect",
+      params: { target: target.name, attacker: attacker.name, dmg: result.damageToAttacker },
     });
   } else if (defenseCard) {
     dealDamage(state, target.id, result.damageToTarget);
     pushEvent(state, {
       type: "defend",
       actorId: target.id,
-      message: `${target.name} blocks with ${defenseCard.name}, taking ${result.damageToTarget} damage.`,
+      key: "log.block",
+      params: { target: target.name, card: cardNameKey(defenseCard), dmg: result.damageToTarget },
     });
   } else {
     dealDamage(state, target.id, result.damageToTarget);
@@ -539,7 +558,8 @@ function resolveDefense(state: RoomState, cardId: string | null): RoomState {
       type: "attack",
       actorId: attacker.id,
       targetId: target.id,
-      message: `${target.name} takes ${result.damageToTarget} damage.`,
+      key: "log.takeDamage",
+      params: { target: target.name, dmg: result.damageToTarget },
     });
   }
 

@@ -83,7 +83,10 @@ export interface GameEvent {
     | "skip"
     | "eliminate"
     | "win";
-  message: string;
+  /** i18n template key (e.g. "log.attack"); rendered client-side per language. */
+  key: string;
+  /** Interpolation params for the template (names, numbers, card-name keys). */
+  params?: Record<string, string | number>;
   actorId?: string;
   targetId?: string;
 }

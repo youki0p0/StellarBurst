@@ -116,6 +116,54 @@ const DICT: Record<string, Entry> = {
   // Battle log
   "log.title": { ja: "バトルログ", en: "Battle Log" },
   "log.waiting": { ja: "アクション待ち…", en: "Waiting for action…" },
+  "log.info": { ja: "—", en: "—" },
+  "log.begin": { ja: "バトル開始！", en: "The battle begins!" },
+  "log.joined": { ja: "{name} が参加しました。", en: "{name} joined the room." },
+  "log.rematch": { ja: "ロビーに戻りました（再戦）。", en: "Returned to the lobby for a rematch." },
+  "log.pass": { ja: "{name} はパスした。", en: "{name} passes." },
+  "log.eliminate": { ja: "{name} は敗北した！", en: "{name} has been defeated!" },
+  "log.win": { ja: "{name} が最後の生き残り！", en: "{name} is the last one standing!" },
+  "log.slipTick": { ja: "{name} は毒で {dmg} ダメージ。", en: "{name} takes {dmg} slip damage." },
+  "log.skipped": { ja: "{name} のターンは飛ばされた。", en: "{name}'s turn was skipped." },
+  "log.heal": { ja: "{name} は {amt} 回復した。", en: "{name} heals {amt} HP." },
+  "log.shuffle": {
+    ja: "{name} が混沌の交換！全員の手札がシャッフルされた。",
+    en: "{name} unleashes Chaos Swap — everyone's hands are reshuffled!",
+  },
+  "log.skipOk": {
+    ja: "{name} は {target} をひるませた——次のターンを飛ばす！",
+    en: "{name} staggers {target} — their next turn will be skipped!",
+  },
+  "log.skipFail": {
+    ja: "{name} は {target} をひるませようとしたが失敗した。",
+    en: "{name} tried to stagger {target}, but it failed.",
+  },
+  "log.cripple": {
+    ja: "{name} は {target} の防御を3ターン封じた！",
+    en: "{name} cripples {target} — no defense for 3 turns!",
+  },
+  "log.slip": { ja: "{name} は {target} に毒を盛った（3ターン）。", en: "{name} poisons {target} for 3 turns." },
+  "log.attack": {
+    ja: "{name} は {card}（{dmg}）で {target} を攻撃。",
+    en: "{name} attacks {target} with {card} ({dmg}).",
+  },
+  "log.attackFatal": {
+    ja: "{name} は致命の {card} を {target} に放った！",
+    en: "{name} launches a FATAL {card} at {target}!",
+  },
+  "log.negate": {
+    ja: "{target} は {card} で致命の一撃を無効化！",
+    en: "{target} spends {card} to negate the fatal blow!",
+  },
+  "log.reflect": {
+    ja: "{target} は {dmg} ダメージを {attacker} に跳ね返した！",
+    en: "{target} reflects {dmg} damage back at {attacker}!",
+  },
+  "log.block": {
+    ja: "{target} は {card} で防御し、{dmg} ダメージを受けた。",
+    en: "{target} blocks with {card}, taking {dmg} damage.",
+  },
+  "log.takeDamage": { ja: "{target} は {dmg} ダメージを受けた。", en: "{target} takes {dmg} damage." },
 
   // Card kind labels
   "kind.attack": { ja: "攻", en: "ATK" },
@@ -158,6 +206,63 @@ const SPECIAL_TEXT: Record<string, Entry> = {
   limit_defense: { ja: "相手は3ターン防御できなくなる。", en: "Target cannot defend for 3 turns." },
   slip_damage: { ja: "相手は次の3ターン、継続ダメージを受ける。", en: "Target takes damage over their next 3 turns." },
 };
+
+const CARD_NAME: Record<string, Entry> = {
+  "cardname.fatal": { ja: "致命の一撃", en: "Fatal Strike" },
+  "cardname.sword": { ja: "斬撃", en: "Plain Strike" },
+  "cardname.flame": { ja: "火炎斬", en: "Red Strike" },
+  "cardname.bolt": { ja: "雷撃", en: "Blue Strike" },
+  "cardname.claw": { ja: "爪撃", en: "Green Strike" },
+  "cardname.lightguard": { ja: "軽装ガード", en: "Light Guard" },
+  "cardname.aegis": { ja: "イージス", en: "Aegis" },
+  "cardname.bulwark": { ja: "大盾", en: "Bulwark" },
+  "cardname.mirror": { ja: "反射の鏡", en: "Mirror Ward" },
+  "cardname.laststand": { ja: "不屈", en: "Last Stand" },
+  "cardname.mend": { ja: "回復", en: "Mend" },
+  "cardname.chaos": { ja: "混沌の交換", en: "Chaos Swap" },
+  "cardname.stagger": { ja: "ひるませ", en: "Stagger" },
+  "cardname.cripple": { ja: "防御封じ", en: "Cripple" },
+  "cardname.venom": { ja: "毒", en: "Venom" },
+};
+
+/** Stable i18n key for a card's name, derived from its attributes. */
+export function cardNameKey(card: Card): string {
+  if (card.kind === "attack") {
+    if (card.fatal) return "cardname.fatal";
+    if (card.color === "red") return "cardname.flame";
+    if (card.color === "blue") return "cardname.bolt";
+    if (card.color === "green") return "cardname.claw";
+    return "cardname.sword";
+  }
+  if (card.kind === "defense") {
+    const map: Record<string, string> = {
+      reduce_third: "cardname.lightguard",
+      reduce_half: "cardname.aegis",
+      reduce_twothirds: "cardname.bulwark",
+      reflect: "cardname.mirror",
+      nullify_fatal: "cardname.laststand",
+    };
+    return map[card.defense ?? ""] ?? "cardname.sword";
+  }
+  const map: Record<string, string> = {
+    heal: "cardname.mend",
+    shuffle_hands: "cardname.chaos",
+    skip_turn: "cardname.stagger",
+    limit_defense: "cardname.cripple",
+    slip_damage: "cardname.venom",
+  };
+  return map[card.special ?? ""] ?? "cardname.mend";
+}
+
+/** Localized card name. */
+export function localizeCardName(card: Card, lang: Lang): string {
+  return CARD_NAME[cardNameKey(card)]?.[lang] ?? card.name;
+}
+
+/** Localize a card-name key produced by cardNameKey (used by the battle log). */
+export function localizeCardNameKey(key: string, lang: Lang): string {
+  return CARD_NAME[key]?.[lang] ?? key;
+}
 
 /** Localized description for a card (name stays as authored). */
 export function localizeCardDescription(card: Card, lang: Lang): string {
