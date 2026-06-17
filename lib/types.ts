@@ -4,11 +4,8 @@ export type CardColor = "colorless" | "red" | "blue" | "green";
 export type CardKind = "attack" | "defense" | "special";
 
 export type DefenseEffect =
-  | "reduce_third" // reduce incoming damage by 1/3
-  | "reduce_half" // reduce incoming damage by 1/2
-  | "reduce_twothirds" // reduce incoming damage by 2/3
-  | "reflect" // reflect incoming damage back to attacker
-  | "nullify_fatal"; // hard-counter a fatal attack
+  | "block" // fully cut all incoming damage
+  | "reflect"; // fully cut, and reflect the damage back to the attacker
 
 export type SpecialEffect =
   | "heal" // heal self

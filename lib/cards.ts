@@ -48,11 +48,8 @@ function weightedPick<T>(entries: [T, number][], rng: () => number): T {
 export const COLORLESS_ATTACK_RATIO = 0.6;
 
 const DEFENSE_META: Record<DefenseEffect, { name: string; description: string }> = {
-  reduce_third: { name: "Light Guard", description: "Reduce incoming damage by 1/3." },
-  reduce_half: { name: "Aegis", description: "Reduce incoming damage by 1/2." },
-  reduce_twothirds: { name: "Bulwark", description: "Reduce incoming damage by 2/3." },
-  reflect: { name: "Mirror Ward", description: "Reflect the attack back at the attacker." },
-  nullify_fatal: { name: "Last Stand", description: "Negate a fatal attack entirely." },
+  block: { name: "Guard", description: "Block all damage from one attack." },
+  reflect: { name: "Mirror Ward", description: "Block all damage and reflect it back at the attacker." },
 };
 
 const SPECIAL_META: Record<SpecialEffect, { name: string; description: string }> = {
@@ -84,20 +81,14 @@ function makeAttack(rng: () => number): Card {
   };
 }
 
+const ALL_COLORS: CardColor[] = ["colorless", "red", "blue", "green"];
+
 function makeDefense(rng: () => number): Card {
-  const effect = weightedPick<DefenseEffect>(
-    [
-      ["reduce_third", 3],
-      ["reduce_half", 3],
-      ["reduce_twothirds", 2],
-      ["reflect", 2],
-      ["nullify_fatal", 1],
-    ],
-    rng,
-  );
-  // Colorless defense is a wildcard, so it is a bit more common.
-  const color: CardColor =
-    rng() < 0.4 ? "colorless" : COLORED[Math.floor(rng() * COLORED.length)];
+  // Block is the common defense; reflect is the rarer, stronger one.
+  const effect: DefenseEffect = rng() < 0.7 ? "block" : "reflect";
+  // Colors are uniform; a colored defense only stops its color (plus colorless
+  // attacks), a colorless defense only stops colorless attacks.
+  const color = ALL_COLORS[Math.floor(rng() * ALL_COLORS.length)];
   const meta = DEFENSE_META[effect];
   return {
     id: nextCardId(),
@@ -157,6 +148,11 @@ export function drawCard(rng: () => number = Math.random): Card {
 /** Draw `n` cards. */
 export function drawCards(n: number, rng: () => number = Math.random): Card[] {
   return Array.from({ length: n }, () => drawCard(rng));
+}
+
+/** Draw a guaranteed attack card (used to keep hands from being all-defense). */
+export function drawAttack(rng: () => number = Math.random): Card {
+  return makeAttack(rng);
 }
 
 export const HAND_SIZE = 5;
