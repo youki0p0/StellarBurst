@@ -121,6 +121,11 @@ export default function HomePage() {
       </div>
 
       <p className="text-center text-xs text-slate-600">{t("home.footer")}</p>
+      <p className="text-center">
+        <a href="/cards" className="text-xs text-slate-500 hover:text-neon-cyan hover:underline">
+          {t("home.cards")}
+        </a>
+      </p>
     </div>
   );
 }
