@@ -500,7 +500,12 @@ export function subscribeRoom(roomId: string, onChange: () => void): RealtimeCha
 
 /** Notify other clients in the room to reload now (low-latency broadcast). */
 export function pokeRoom(channel: RealtimeChannel | null): void {
-  channel?.send({ type: "broadcast", event: "sync", payload: {} });
+  // Only broadcast once the channel is actually joined over WebSocket.
+  // Calling send() before that makes supabase-js fall back to REST and spam a
+  // deprecation warning; polling already covers sync until the socket is up.
+  if (channel && channel.state === "joined") {
+    channel.send({ type: "broadcast", event: "sync", payload: {} });
+  }
 }
 
 export function unsubscribeRoom(channel: RealtimeChannel | null): void {
