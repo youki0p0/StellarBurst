@@ -210,6 +210,69 @@ export async function createRoomRow(
   return { roomId, playerId };
 }
 
+/**
+ * Create a room that is already mid-game in a single batch of inserts (used for
+ * solo / practice play). Avoids the multi-write race of create-then-mutate.
+ */
+export async function createStartedRoomRow(
+  state: RoomState,
+  hostClientId: string,
+): Promise<{ roomId: string; playerId: string } | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const roomId = newId();
+  const hostPlayer = state.players.find((p) => p.clientId === hostClientId);
+  if (!hostPlayer) return null;
+
+  const { error: roomErr } = await supabase.from("rooms").insert({
+    id: roomId,
+    code: state.code,
+    status: phaseToStatus(state.phase),
+    host_client_id: hostClientId,
+    seed: String(state.seed),
+    current_turn_player_id: currentPlayerId(state),
+    winner_player_id: state.winnerId,
+    state: {
+      phase: state.phase,
+      turnOrder: state.turnOrder,
+      currentTurnIndex: state.currentTurnIndex,
+      pending: state.pending,
+    },
+    version: state.version,
+  });
+  if (roomErr) return null;
+
+  const playerRows = state.players.map((p) => ({
+    id: p.id,
+    room_id: roomId,
+    client_id: p.clientId,
+    name: p.name,
+    hp: p.hp,
+    hand: state.hands[p.id] ?? [],
+    status: p.alive ? "alive" : "defeated",
+    is_ready: p.isReady,
+    is_cpu: p.isCPU,
+    effects: p.effects,
+  }));
+  const { error: playerErr } = await supabase.from("players").insert(playerRows);
+  if (playerErr) return null;
+
+  const events = state.log.filter((e) => /^e\d+$/.test(e.id));
+  if (events.length > 0) {
+    await supabase.from("game_events").insert(
+      events.map((e) => ({
+        room_id: roomId,
+        player_id: e.actorId ?? null,
+        event_type: e.type,
+        payload: { message: e.message, targetId: e.targetId ?? null },
+      })),
+    );
+  }
+
+  return { roomId, playerId: hostPlayer.id };
+}
+
 export interface JoinResult {
   ok: boolean;
   roomId?: string;
