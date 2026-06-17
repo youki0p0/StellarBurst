@@ -139,7 +139,11 @@ export const useGameStore = create<GameStore>((set, get) => {
       for (let attempt = 0; attempt < 4; attempt++) {
         const base = get().roomState;
         if (!base) return;
-        const next = transform(base);
+        // Clone before reducing: startGame/addCpuPlayer/resetToLobby mutate in
+        // place and return the same reference, which would make set() a no-op
+        // (React/zustand see an unchanged reference and skip the re-render — the
+        // classic "state changed but the screen stayed on the lobby" bug).
+        const next = transform(structuredClone(base));
         if (next.version === base.version) {
           // The reducer rejected the action (e.g. startGame needs 2+ players,
           // or it isn't this client's turn). No DB write is attempted.
