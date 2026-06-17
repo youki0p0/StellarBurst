@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-board-900 text-slate-100 antialiased;
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(168, 85, 247, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 100%, rgba(34, 211, 238, 0.12), transparent 45%);
+  background-attachment: fixed;
+}
+
+/* Prevent rubber-band / accidental zoom feel on mobile. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl px-5 py-3 text-base font-semibold
+           transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-br from-neon-purple to-neon-pink text-white shadow-neon
+           hover:brightness-110;
+  }
+  .btn-secondary {
+    @apply btn border border-board-600 bg-board-700/70 text-slate-100 hover:bg-board-600;
+  }
+  .panel {
+    @apply rounded-2xl border border-board-600/70 bg-board-800/80 backdrop-blur;
+  }
+  .input {
+    @apply w-full rounded-xl border border-board-600 bg-board-900/80 px-4 py-3 text-lg
+           outline-none focus:border-neon-purple focus:shadow-neon;
+  }
+}
