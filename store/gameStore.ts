@@ -46,11 +46,17 @@ interface Identity {
 
 function loadIdentity(): Identity {
   if (typeof window === "undefined") return { id: "server", name: "" };
-  let id = localStorage.getItem("sb_client_id");
+  // Identity is per-TAB (sessionStorage), not per-browser (localStorage):
+  // localStorage is shared across tabs, so two tabs of one browser would get
+  // the same client_id and collapse into a single seat — breaking 2-player
+  // testing and any multi-tab use. sessionStorage survives in-tab reloads
+  // (so reconnect still works) but gives each tab a distinct player.
+  let id = sessionStorage.getItem("sb_client_id");
   if (!id) {
     id = `c_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
-    localStorage.setItem("sb_client_id", id);
+    sessionStorage.setItem("sb_client_id", id);
   }
+  // Display name is remembered across sessions in localStorage.
   return { id, name: localStorage.getItem("sb_player_name") || "" };
 }
 
