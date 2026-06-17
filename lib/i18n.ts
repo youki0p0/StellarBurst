@@ -176,6 +176,19 @@ const DICT: Record<string, Entry> = {
 
   // Settings
   "settings.language": { ja: "言語", en: "Language" },
+
+  // Card catalog (debug)
+  "home.cards": { ja: "カード図鑑", en: "Card catalog" },
+  "cards.title": { ja: "カード図鑑", en: "Card Catalog" },
+  "cards.subtitle": {
+    ja: "全カードの見本（デバッグ用）。",
+    en: "Every card archetype (for debugging).",
+  },
+  "cards.attacks": { ja: "攻撃", en: "Attacks" },
+  "cards.defenses": { ja: "防御", en: "Defenses" },
+  "cards.defenseColors": { ja: "防御カードの色", en: "Defense colors" },
+  "cards.specials": { ja: "特殊", en: "Specials" },
+  "cards.back": { ja: "← ホームに戻る", en: "← Back to home" },
 };
 
 /** Translate a key, with optional {placeholder} interpolation. */
