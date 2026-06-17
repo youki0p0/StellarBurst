@@ -15,6 +15,8 @@ export interface OrbitBoardProps {
   finishingId?: string | null; // star currently being finished (STELLA target)
   onSelect?: (id: string) => void;
   flash?: { id: string; kind: "hit" | "reflect" | "heal" | "super" } | null;
+  /** Width cap for the square board (defaults to a roomy size). */
+  className?: string;
 }
 
 const FLASH_STYLE: Record<NonNullable<OrbitBoardProps["flash"]>["kind"], string> = {
@@ -35,13 +37,14 @@ export function OrbitBoard(props: OrbitBoardProps) {
     finishingId = null,
     onSelect,
     flash = null,
+    className = "max-w-md",
   } = props;
 
   const t = useT();
   const n = Math.max(players.length, 1);
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-md">
+    <div className={`relative mx-auto aspect-square w-full ${className}`}>
       {/* Faint orbit ring (passes through each star's outer anchor point) */}
       <div
         className="pointer-events-none absolute rounded-full border border-board-600/60"

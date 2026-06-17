@@ -233,70 +233,13 @@ export function GameBoard() {
         </div>
       </div>
 
-      {/* STELLA finishing window */}
-      {inStella && stella && finishTarget && (
-        <div className="panel animate-pop border-neon-gold/70 bg-gradient-to-r from-neon-gold/10 to-neon-pink/10 p-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-black tracking-widest text-neon-gold">
-              🌟 {t("stella.windowTitle")}
-            </div>
-            <div className="text-lg font-black tabular-nums text-neon-pink">{secsLeft}</div>
-          </div>
-
-          {iAmFinished ? (
-            <>
-              <p className="mt-1 text-sm font-bold text-neon-pink">{t("stella.youAreTarget")}</p>
-              <button
-                onClick={() => sendGameAction({ type: "call_out" })}
-                className="btn-primary mt-2 w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-3 text-lg font-black"
-              >
-                {t("stella.escapeBtn")}
-              </button>
-              {stellaShields.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {stellaShields.map((c) => (
-                    <CardView
-                      key={c.id}
-                      card={c}
-                      compact
-                      onClick={() => sendGameAction({ type: "defend", cardId: c.id })}
-                    />
-                  ))}
-                </div>
-              )}
-              <button
-                onClick={() => sendGameAction({ type: "defend", cardId: null })}
-                className="btn-secondary mt-2 w-full"
-              >
-                {t("game.takeHit")}
-              </button>
-            </>
-          ) : iAmFinisher ? (
-            <p className="mt-1 text-sm text-slate-300">{t("stella.attackerWait")}</p>
-          ) : iCanPoint ? (
-            <>
-              <button
-                onClick={() => sendGameAction({ type: "call_out" })}
-                className="btn-secondary mt-2 w-full border-neon-pink/70 text-neon-pink"
-              >
-                {t("stella.pointOutBtn")}
-              </button>
-              <p className="mt-1 text-center text-xs text-slate-400">{t("stella.bystanderHint")}</p>
-            </>
-          ) : (
-            <p className="mt-1 text-sm text-slate-400">
-              {iPointed ? t("stella.pointedAlready") : t("stella.attackerWait")}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Orbit board: stars on the ring */}
+      {/* Star statuses on the orbit ring (compact, top of screen) */}
       <OrbitBoard
         players={roomState.players}
         turnId={turnId}
         direction={roomState.direction}
         selfClientId={identity.id}
+        className="max-w-[17rem]"
         selectableIds={
           targetingMode
             ? opponents.filter((p) => p.alive).map((p) => p.id)
@@ -308,103 +251,165 @@ export function GameBoard() {
         flash={flash}
       />
 
-      <BattleLog log={roomState.log} />
+      {/* Bottom cluster (pinned low for thumb reach): STELLA → defense → hand → log */}
+      <div className="mt-auto flex flex-col gap-3">
+        {/* STELLA finishing window — sits right above the hand */}
+        {inStella && stella && finishTarget && (
+          <div className="panel animate-pop border-neon-gold/70 bg-gradient-to-r from-neon-gold/10 to-neon-pink/10 p-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-black tracking-widest text-neon-gold">
+                🌟 {t("stella.windowTitle")}
+              </div>
+              <div className="text-lg font-black tabular-nums text-neon-pink">{secsLeft}</div>
+            </div>
 
-      {/* Defense prompt */}
-      {amDefending && pending && (
-        <div className="panel border-neon-pink/60 p-3">
-          <div className="mb-2 text-sm font-bold text-neon-pink">
-            {t("game.incoming")} {pending.card.fatal ? `${t("game.fatal")} ` : ""}
-            {localizeCardName(pending.card, lang)}
-            {!pending.card.fatal && ` (${pending.card.damage})`} — {t("game.defendQ")}
+            {iAmFinished ? (
+              <>
+                <p className="mt-1 text-sm font-bold text-neon-pink">{t("stella.youAreTarget")}</p>
+                <button
+                  onClick={() => sendGameAction({ type: "call_out" })}
+                  className="btn-primary mt-2 w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-3 text-lg font-black"
+                >
+                  {t("stella.escapeBtn")}
+                </button>
+                {stellaShields.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {stellaShields.map((c) => (
+                      <CardView
+                        key={c.id}
+                        card={c}
+                        compact
+                        onClick={() => sendGameAction({ type: "defend", cardId: c.id })}
+                      />
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => sendGameAction({ type: "defend", cardId: null })}
+                  className="btn-secondary mt-2 w-full"
+                >
+                  {t("game.takeHit")}
+                </button>
+              </>
+            ) : iAmFinisher ? (
+              <p className="mt-1 text-sm text-slate-300">{t("stella.attackerWait")}</p>
+            ) : iCanPoint ? (
+              <>
+                <button
+                  onClick={() => sendGameAction({ type: "call_out" })}
+                  className="btn-secondary mt-2 w-full border-neon-pink/70 text-neon-pink"
+                >
+                  {t("stella.pointOutBtn")}
+                </button>
+                <p className="mt-1 text-center text-xs text-slate-400">{t("stella.bystanderHint")}</p>
+              </>
+            ) : (
+              <p className="mt-1 text-sm text-slate-400">
+                {iPointed ? t("stella.pointedAlready") : t("stella.attackerWait")}
+              </p>
+            )}
           </div>
-          {!canUseDefense(me!) && (
-            <p className="mb-2 text-xs text-red-300">{t("game.crippled")}</p>
+        )}
+
+        {/* Defense prompt — also just above the hand */}
+        {amDefending && pending && (
+          <div className="panel border-neon-pink/60 p-3">
+            <div className="mb-2 text-sm font-bold text-neon-pink">
+              {t("game.incoming")} {pending.card.fatal ? `${t("game.fatal")} ` : ""}
+              {localizeCardName(pending.card, lang)}
+              {!pending.card.fatal && ` (${pending.card.damage})`} — {t("game.defendQ")}
+            </div>
+            {!canUseDefense(me!) && (
+              <p className="mb-2 text-xs text-red-300">{t("game.crippled")}</p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {defenseOptions.map((c) => (
+                <CardView
+                  key={c.id}
+                  card={c}
+                  compact
+                  onClick={() => sendGameAction({ type: "defend", cardId: c.id })}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => sendGameAction({ type: "defend", cardId: null })}
+              className="btn-secondary mt-3 w-full"
+            >
+              {t("game.takeHit")}
+            </button>
+          </div>
+        )}
+
+        {/* Hand + action bar */}
+        <div>
+          {targetingMode && (
+            <div className="mb-2 text-center text-sm font-semibold text-neon-gold">
+              {t("game.selectTarget")}
+            </div>
           )}
-          <div className="flex flex-wrap gap-2">
-            {defenseOptions.map((c) => (
+
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {hand.map((c) => (
               <CardView
                 key={c.id}
                 card={c}
-                compact
-                onClick={() => sendGameAction({ type: "defend", cardId: c.id })}
+                selected={c.id === selectedCardId}
+                disabled={!isMyTurn}
+                onClick={() => handleCardTap(c)}
               />
             ))}
           </div>
-          <button
-            onClick={() => sendGameAction({ type: "defend", cardId: null })}
-            className="btn-secondary mt-3 w-full"
-          >
-            {t("game.takeHit")}
-          </button>
+
+          {isMyTurn && canDeclareStella && (
+            <button
+              onClick={() => setDeclareStella((v) => !v)}
+              aria-pressed={declareStella}
+              className={[
+                "mb-2 w-full rounded-lg border px-3 py-2 text-sm font-bold tracking-wide transition",
+                declareStella
+                  ? "border-neon-gold bg-neon-gold/15 text-neon-gold shadow-neon"
+                  : "border-board-600 text-slate-300",
+              ].join(" ")}
+            >
+              🌟 {t("stella.toggle")} · {declareStella ? "ON" : "OFF"}
+            </button>
+          )}
+
+          {isMyTurn && (
+            <div className="flex gap-2">
+              {selectedCard && !needsTarget(selectedCard) && (
+                <button onClick={() => playCard()} className="btn-primary flex-1">
+                  {willDeclareStella
+                    ? t("stella.declareBtn")
+                    : `${t("game.play")} ${localizeCardName(selectedCard, lang)}`}
+                </button>
+              )}
+              {selectedCard && (
+                <button onClick={() => setSelectedCardId(null)} className="btn-secondary">
+                  {t("game.cancel")}
+                </button>
+              )}
+              {!selectedCard && (
+                <button
+                  onClick={() => sendGameAction({ type: "pass" })}
+                  className="btn-secondary flex-1"
+                >
+                  {t("game.passTurn")}
+                </button>
+              )}
+            </div>
+          )}
+
+          {!isMyTurn && !amDefending && (
+            <div className="py-2 text-center text-sm text-slate-400">
+              {t("game.waitingFor")} {turnPlayer?.name ?? t("game.nextPlayer")}…
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Hand + action bar */}
-      <div className="mt-auto">
-        {targetingMode && (
-          <div className="mb-2 text-center text-sm font-semibold text-neon-gold">
-            {t("game.selectTarget")}
-          </div>
-        )}
-
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {hand.map((c) => (
-            <CardView
-              key={c.id}
-              card={c}
-              selected={c.id === selectedCardId}
-              disabled={!isMyTurn}
-              onClick={() => handleCardTap(c)}
-            />
-          ))}
-        </div>
-
-        {isMyTurn && canDeclareStella && (
-          <button
-            onClick={() => setDeclareStella((v) => !v)}
-            aria-pressed={declareStella}
-            className={[
-              "mb-2 w-full rounded-lg border px-3 py-2 text-sm font-bold tracking-wide transition",
-              declareStella
-                ? "border-neon-gold bg-neon-gold/15 text-neon-gold shadow-neon"
-                : "border-board-600 text-slate-300",
-            ].join(" ")}
-          >
-            🌟 {t("stella.toggle")} · {declareStella ? "ON" : "OFF"}
-          </button>
-        )}
-
-        {isMyTurn && (
-          <div className="flex gap-2">
-            {selectedCard && !needsTarget(selectedCard) && (
-              <button onClick={() => playCard()} className="btn-primary flex-1">
-                {willDeclareStella
-                  ? t("stella.declareBtn")
-                  : `${t("game.play")} ${localizeCardName(selectedCard, lang)}`}
-              </button>
-            )}
-            {selectedCard && (
-              <button onClick={() => setSelectedCardId(null)} className="btn-secondary">
-                {t("game.cancel")}
-              </button>
-            )}
-            {!selectedCard && (
-              <button
-                onClick={() => sendGameAction({ type: "pass" })}
-                className="btn-secondary flex-1"
-              >
-                {t("game.passTurn")}
-              </button>
-            )}
-          </div>
-        )}
-
-        {!isMyTurn && !amDefending && (
-          <div className="py-2 text-center text-sm text-slate-400">
-            {t("game.waitingFor")} {turnPlayer?.name ?? t("game.nextPlayer")}…
-          </div>
-        )}
+        {/* Battle log — very bottom */}
+        <BattleLog log={roomState.log} />
       </div>
     </div>
   );
