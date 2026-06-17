@@ -21,7 +21,6 @@ const ATTACKS: Card[] = [
   mk({ kind: "attack", color: "colorless", damage: 16, attackTarget: "random" }),
   mk({ kind: "attack", color: "colorless", damage: 7, attackTarget: "all" }),
   mk({ kind: "attack", color: "colorless", damage: 16, attackTarget: "next", chain: true }),
-  mk({ kind: "attack", color: "red", damage: 20, attackTarget: "choose" }),
   mk({ kind: "attack", color: "red", damage: 30, attackTarget: "next", fatal: true }),
 ];
 

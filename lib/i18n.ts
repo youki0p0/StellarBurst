@@ -218,6 +218,41 @@ const DICT: Record<string, Entry> = {
   // Settings
   "settings.language": { ja: "言語", en: "Language" },
 
+  // Tutorial
+  "home.tutorial": { ja: "遊び方を見る", en: "How to play" },
+  "tutorial.title": { ja: "遊び方", en: "How to play" },
+  "tutorial.subtitle": { ja: "ざっくり眺めるだけでOK", en: "Just glance — no reading needed" },
+  "tutorial.goalTitle": { ja: "最後の星になろう", en: "Be the Last Star" },
+  "tutorial.goalBody": {
+    ja: "相手の輝度を 0 にして、最後まで輝く星が勝ち。",
+    en: "Drain everyone's light to 0 — the last star shining wins.",
+  },
+  "tutorial.orbitTitle": { ja: "順番は星回り", en: "Turns go around the orbit" },
+  "tutorial.orbitBody": {
+    ja: "手番は軌道にそって隣の星へ。逆行カードで向きが反転。",
+    en: "Play passes to the next star along the orbit. Retrograde flips it.",
+  },
+  "tutorial.cardsTitle": { ja: "カードは3種類", en: "Three kinds of card" },
+  "tutorial.atk": { ja: "攻撃：隣を減光", en: "Attack: dim the next star" },
+  "tutorial.def": { ja: "防御：防ぐ/反射/受け流す", en: "Defense: block / reflect / pass" },
+  "tutorial.spc": { ja: "特殊：回復・逆行など", en: "Special: heal, reverse…" },
+  "tutorial.defColorTitle": { ja: "色を合わせて防御", en: "Match the color" },
+  "tutorial.defColorBody": {
+    ja: "無色フレアはどの盾でも防げる。色付きは同じ色だけ。",
+    en: "A colorless flare is stopped by any shield; a colored one needs the same color.",
+  },
+  "tutorial.fatalTitle": { ja: "超新星はFATAL", en: "Supernova = FATAL" },
+  "tutorial.fatalBody": {
+    ja: "即死級。でも盾を1枚使えば消せる。",
+    en: "Lethal — but spend any one shield to cancel it.",
+  },
+  "tutorial.stellaTitle": { ja: "🌟 STELLA！コール", en: "🌟 STELLA! call" },
+  "tutorial.stellaBody": {
+    ja: "トドメを狙うとき宣言。周りは『指摘』で割り込み、当たれば強化・ハズレは減光。外したコール者もペナルティ。",
+    en: "Declare it for a kill. Others can point it out — right = a buff, wrong = lose light. A missed call also penalizes the caller.",
+  },
+  "tutorial.start": { ja: "はじめる ▶", en: "Let's play ▶" },
+
   // Card catalog (debug)
   "home.cards": { ja: "カード図鑑", en: "Card catalog" },
   "cards.title": { ja: "カード図鑑", en: "Card Catalog" },

@@ -68,6 +68,12 @@ export default function HomePage() {
           StellarBurst
         </h1>
         <p className="mt-2 text-slate-400">{t("home.tagline")}</p>
+        <a
+          href="/tutorial"
+          className="mt-3 inline-block rounded-full border border-neon-cyan/40 px-4 py-1 text-sm text-neon-cyan hover:bg-neon-cyan/10"
+        >
+          {t("home.tutorial")} ▶
+        </a>
       </header>
 
       <div className="panel space-y-3 p-5">
