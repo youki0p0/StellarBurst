@@ -35,149 +35,159 @@ function Pixels({
 }
 
 // ---------------------------------------------------------------------------
-// SWORD (colorless) — vertical steel blade, gold crossguard + pommel.
-// O outline · S steel · H highlight · g gold · d dark-gold
+// SOLAR FLARE (colorless) — a white-gold star with a curved flare arc sweeping
+// off its edge. Bright corona, hot white core.
+// O outline · g gold · y pale gold · W white core · a arc glow
 // ---------------------------------------------------------------------------
-const SWORD_PALETTE: Record<string, string> = {
+const SOLAR_PALETTE: Record<string, string> = {
   O: OUTLINE,
-  S: "#cbd5e1",
-  H: "#f8fafc",
-  g: "#fbbf24",
-  d: "#b45309",
+  g: "#fde68a",
+  y: "#fef9c3",
+  W: "#f8fafc",
+  a: "#facc15",
 };
-const SWORD_GRID = [
-  "......OO........",
-  ".....OHSO.......",
-  ".....OHSO.......",
-  ".....OHSO.......",
-  ".....OHSO.......",
-  ".....OHSO.......",
-  ".....OHSO.......",
-  "...OOOHSOOO.....",
-  "...OgggdggO.....",
-  "...OOOgdOOO.....",
-  ".....OgdO.......",
-  ".....OgdO.......",
-  "....OgggdO......",
-  "....OgddgO......",
-  "....OOggOO......",
-  "......OO........",
+const SOLAR_GRID = [
+  ".......O........",
+  "......OgO.......",
+  "....O.OyO.O.....",
+  "...OgOOyOOgO....",
+  "....OOgyyOO.....",
+  "..O..OyWWyO..O..",
+  ".OgOOyWWWWyOOgO.",
+  "..OOyWWWWWWyOO..",
+  ".....OyWWyO.....",
+  "...OOgyyyyOO....",
+  "..OgOOyOOyOgaO..",
+  "...O.OyO.OaO....",
+  "......OO..OaO...",
+  ".........OyaO...",
+  "..........OaO...",
+  "...........O....",
 ];
 
 // ---------------------------------------------------------------------------
-// FLAME (red) — teardrop fire with hot inner core.
-// O outline · R deep red · F orange · Y yellow core
+// RED GIANT BURST (red) — a swelling red-orange star, fat core with flame
+// tongues licking outward and a hot amber center.
+// O outline · R deep red · F orange · Y amber core · W hot center
 // ---------------------------------------------------------------------------
-const FLAME_PALETTE: Record<string, string> = {
+const REDGIANT_PALETTE: Record<string, string> = {
   O: OUTLINE,
   R: "#ef4444",
   F: "#f97316",
   Y: "#fbbf24",
+  W: "#fef3c7",
 };
-const FLAME_GRID = [
-  ".......O........",
-  "......ORO.......",
-  "......ORO.......",
-  ".....ORFO......",
-  ".....ORFO.O....",
-  "....ORFFOFO....",
-  "....ORFYFRO....",
-  "...ORFYYFFRO...",
-  "...ORFYYYFRO...",
-  "..ORFFYYYFFRO..",
-  "..ORFYYYYYFRO..",
-  "..ORFYYYYYFRO..",
-  "..ORFFYYYFFRO..",
-  "...ORFFFFFRO...",
-  "....ORRRRRO....",
-  ".....OOOOO.....",
+const REDGIANT_GRID = [
+  "...O....O....O..",
+  "..ORO..ORO..ORO.",
+  "...ORO.ORO.ORO..",
+  "....ORRRRRRRO...",
+  "...ORFFFFFFFRO..",
+  "..ORFFYYYYYFFRO.",
+  ".ORFFYYWWWYYFFRO",
+  ".ORFYYWWWWWYYFRO",
+  ".ORFYYWWWWWYYFRO",
+  ".ORFFYYWWWYYFFRO",
+  "..ORFFYYYYYFFRO.",
+  "...ORFFFFFFFRO..",
+  "....ORRRRRRRO...",
+  "...ORO.ORO.ORO..",
+  "..ORO..ORO..ORO.",
+  "...O....O....O..",
 ];
 
 // ---------------------------------------------------------------------------
-// BOLT (blue) — jagged lightning, electric blue with white-hot core.
-// O outline · B sky blue · L pale blue · C yellow core
+// BLUE COMET (blue) — a blue-cyan comet head with a streaking tail trailing
+// from upper-right to lower-left.
+// O outline · B sky blue · C cyan · L pale ice · W white core
 // ---------------------------------------------------------------------------
-const BOLT_PALETTE: Record<string, string> = {
+const COMET_PALETTE: Record<string, string> = {
   O: OUTLINE,
   B: "#38bdf8",
+  C: "#22d3ee",
   L: "#e0f2fe",
-  C: "#facc15",
+  W: "#f8fafc",
 };
-const BOLT_GRID = [
-  "........OOO.....",
-  ".......OBLO.....",
-  "......OBLBO.....",
-  ".....OBLBO......",
-  "....OBLCBO......",
-  "...OBLCBO.......",
-  "..OBLCBOO.......",
-  ".OBLCBBO........",
-  ".OLCBBBBBO......",
-  ".OBBBBLCBO......",
-  "...OOOBLCBO.....",
-  ".....OBLCBO....",
-  "......OBLCO....",
-  ".......OBLO....",
-  "........OBO....",
-  ".........O....",
+const COMET_GRID = [
+  "............OO..",
+  "...........OBLO.",
+  "..........OBLBO.",
+  ".........OCLBO..",
+  "........OCBBO...",
+  "...O...OCBBO....",
+  "..OBO.OCWWBO....",
+  "...OBOCWWWCBO...",
+  "....OBLWWWLBO...",
+  ".....OBCWCBO....",
+  "....OBO.OBO.....",
+  "...OBO..OCBO....",
+  "..OBO....OCBO...",
+  ".OBO......OCBO..",
+  ".OO........OBO..",
+  "............OO..",
 ];
 
 // ---------------------------------------------------------------------------
-// CLAW (green) — three diagonal slash marks.
-// O outline · G green · L light green
+// GREEN AURORA (green) — a green star with shimmering aurora ribbons waving
+// behind it.
+// O outline · G green · L light green · P pale mint · W white star core
 // ---------------------------------------------------------------------------
-const CLAW_PALETTE: Record<string, string> = {
+const AURORA_PALETTE: Record<string, string> = {
   O: OUTLINE,
   G: "#22c55e",
-  L: "#86efac",
+  L: "#4ade80",
+  P: "#bbf7d0",
+  W: "#f0fdf4",
 };
-const CLAW_GRID = [
-  "..O....O....O...",
-  ".OLO..OLO..OLO..",
-  ".OGO..OGO..OGO..",
-  ".OGO..OGO..OGO..",
-  ".OGO..OGO..OGO..",
-  "OGLO.OGLO.OGLO..",
-  "OGGO.OGGO.OGGO..",
-  "OGGO.OGGO.OGGO..",
-  "OGGO.OGGO.OGGO..",
-  "OGGO.OGGO.OGGO..",
-  ".OGO..OGO..OGO..",
-  ".OGO..OGO..OGO..",
-  ".OGO..OGO..OGO..",
-  ".OGO..OGO..OGO..",
-  "..OO...OO...OO..",
-  "................",
+const AURORA_GRID = [
+  "..O.......O.....",
+  ".OLO.....OLO....",
+  ".OPO.O..OPO.....",
+  ".OLOOLO.OLO.O...",
+  ".OLOOPOOOLOOLO..",
+  "..OLOLOOPLOLPO..",
+  "...OPLO.OLPLO...",
+  "......O.O.......",
+  ".......W........",
+  "....OPLWLPO.....",
+  "...OPLWWWLPO....",
+  "..OGLWWWWWLGO...",
+  "...OPLWWWLPO....",
+  "....OPLWLPO.....",
+  ".....O.W.O......",
+  ".......O........",
 ];
 
 // ---------------------------------------------------------------------------
-// SKULL (fatal) — bone white skull with neon-pink glowing eye sockets.
-// O outline · B bone · W bright bone · P pink glow · p deep pink
+// SUPERNOVA (fatal) — a bright exploding star: white-pink-gold core hurling
+// magenta rays in every direction. The most dramatic sprite.
+// O outline · W white core · y gold · p pink · M magenta ray · P deep magenta
 // ---------------------------------------------------------------------------
-const SKULL_PALETTE: Record<string, string> = {
+const SUPERNOVA_PALETTE: Record<string, string> = {
   O: OUTLINE,
-  B: "#f1f5f9",
   W: "#ffffff",
-  P: "#ec4899",
-  p: "#9d174d",
+  y: "#fde047",
+  p: "#f9a8d4",
+  M: "#ec4899",
+  P: "#a21caf",
 };
-const SKULL_GRID = [
-  "....OOOOOO.....",
-  "...OWBBBBWO....",
-  "..OBBBBBBBBO...",
-  ".OBBBBBBBBBBO..",
-  ".OBBBBBBBBBBO..",
-  ".OBOPPBBPPOBO..",
-  ".OBPPPBBPPPBO..",
-  ".OBOPpBBpPOBO..",
-  ".OBBBBPPBBBBO..",
-  ".OBBBBPPBBBBO..",
-  "..OBBOBBOBBO...",
-  "...OBOBBOBO....",
-  "...OBOBBOBO....",
-  "...OBOBBOBO....",
-  "....OO..OO....",
-  "..............",
+const SUPERNOVA_GRID = [
+  "..O....OMO....O.",
+  ".OMO...OpO...OMO",
+  "..OPO..OpO..OPO.",
+  "...OpO.OMO.OpO..",
+  "....OpOpyOpO....",
+  ".O...OpyypO...O.",
+  "OMOpOpyWWyOpOpMO",
+  ".OMpypWWWWypMpO.",
+  ".OMpypWWWWypMpO.",
+  "OMOpOpyWWyOpOpMO",
+  ".O...OpyypO...O.",
+  "....OpOpyOpO....",
+  "...OpO.OMO.OpO..",
+  "..OPO..OpO..OPO.",
+  ".OMO...OpO...OMO",
+  "..O....OMO....O.",
 ];
 
 function spriteFor(card: Card): {
@@ -185,18 +195,18 @@ function spriteFor(card: Card): {
   palette: Record<string, string>;
 } {
   if (card.fatal) {
-    return { grid: SKULL_GRID, palette: SKULL_PALETTE };
+    return { grid: SUPERNOVA_GRID, palette: SUPERNOVA_PALETTE };
   }
   switch (card.color) {
     case "red":
-      return { grid: FLAME_GRID, palette: FLAME_PALETTE };
+      return { grid: REDGIANT_GRID, palette: REDGIANT_PALETTE };
     case "blue":
-      return { grid: BOLT_GRID, palette: BOLT_PALETTE };
+      return { grid: COMET_GRID, palette: COMET_PALETTE };
     case "green":
-      return { grid: CLAW_GRID, palette: CLAW_PALETTE };
+      return { grid: AURORA_GRID, palette: AURORA_PALETTE };
     case "colorless":
     default:
-      return { grid: SWORD_GRID, palette: SWORD_PALETTE };
+      return { grid: SOLAR_GRID, palette: SOLAR_PALETTE };
   }
 }
 

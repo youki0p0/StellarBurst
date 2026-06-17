@@ -13,16 +13,22 @@ function mk(c: Omit<Card, "id" | "name" | "description">): Card {
 }
 
 const ATTACKS: Card[] = [
-  mk({ kind: "attack", color: "colorless", damage: 20 }),
-  mk({ kind: "attack", color: "red", damage: 20 }),
-  mk({ kind: "attack", color: "blue", damage: 20 }),
-  mk({ kind: "attack", color: "green", damage: 20 }),
-  mk({ kind: "attack", color: "red", damage: 30, fatal: true }),
+  mk({ kind: "attack", color: "colorless", damage: 18, attackTarget: "next" }),
+  mk({ kind: "attack", color: "red", damage: 18, attackTarget: "next" }),
+  mk({ kind: "attack", color: "blue", damage: 18, attackTarget: "next" }),
+  mk({ kind: "attack", color: "green", damage: 18, attackTarget: "next" }),
+  mk({ kind: "attack", color: "colorless", damage: 16, attackTarget: "prev" }),
+  mk({ kind: "attack", color: "colorless", damage: 16, attackTarget: "random" }),
+  mk({ kind: "attack", color: "colorless", damage: 7, attackTarget: "all" }),
+  mk({ kind: "attack", color: "colorless", damage: 16, attackTarget: "next", chain: true }),
+  mk({ kind: "attack", color: "red", damage: 20, attackTarget: "choose" }),
+  mk({ kind: "attack", color: "red", damage: 30, attackTarget: "next", fatal: true }),
 ];
 
 const DEFENSES: Card[] = [
   mk({ kind: "defense", color: "colorless", defense: "block" }),
   mk({ kind: "defense", color: "colorless", defense: "reflect" }),
+  mk({ kind: "defense", color: "colorless", defense: "pass" }),
 ];
 
 const DEFENSE_COLORS: Card[] = (
@@ -31,15 +37,17 @@ const DEFENSE_COLORS: Card[] = (
 
 const SPECIALS: Card[] = [
   mk({ kind: "special", color: "colorless", special: "heal", value: 20 }),
-  mk({ kind: "special", color: "colorless", special: "shuffle_hands" }),
+  mk({ kind: "special", color: "colorless", special: "reverse" }),
   mk({ kind: "special", color: "colorless", special: "skip_turn", value: 60 }),
-  mk({ kind: "special", color: "colorless", special: "limit_defense" }),
+  mk({ kind: "special", color: "colorless", special: "shuffle_hands" }),
   mk({ kind: "special", color: "colorless", special: "slip_damage", value: 10 }),
 ];
 
 /** Compact debug metadata line for a card. */
 function meta(card: Card): string {
   const bits: string[] = [card.kind, card.color];
+  if (card.attackTarget) bits.push(`→${card.attackTarget}`);
+  if (card.chain) bits.push("chain");
   if (card.damage != null) bits.push(`dmg ${card.damage}`);
   if (card.fatal) bits.push("fatal");
   if (card.defense) bits.push(card.defense);

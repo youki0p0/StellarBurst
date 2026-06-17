@@ -76,6 +76,7 @@ export function createRoomState(code: string, host: Player): RoomState {
     players: [host],
     turnOrder: [],
     currentTurnIndex: 0,
+    direction: 1,
     hands: {},
     pending: null,
     log: [],
@@ -98,6 +99,52 @@ function getPlayer(state: RoomState, id: string): Player | undefined {
 
 export function currentPlayerId(state: RoomState): string | null {
   return state.turnOrder[state.currentTurnIndex] ?? null;
+}
+
+/** The next living player id from `fromId` stepping in `dir` (excludes fromId). */
+function stepAlive(state: RoomState, fromId: string, dir: number): string | null {
+  const order = state.turnOrder;
+  const n = order.length;
+  const start = order.indexOf(fromId);
+  if (start === -1 || n === 0) return null;
+  for (let k = 1; k <= n; k++) {
+    const id = order[(((start + dir * k) % n) + n) % n];
+    if (id === fromId) continue;
+    const p = getPlayer(state, id);
+    if (p && p.alive && p.hp > 0) return id;
+  }
+  return null;
+}
+
+/** A random living opponent of `actorId`, or null. */
+function randomOpponent(state: RoomState, actorId: string): string | null {
+  const opps = state.players.filter((p) => p.alive && p.hp > 0 && p.id !== actorId);
+  if (opps.length === 0) return null;
+  return opps[Math.floor(Math.random() * opps.length)].id;
+}
+
+/** Resolve an attack card's target id from its targeting mode. */
+function attackTargetId(
+  state: RoomState,
+  actorId: string,
+  card: Card,
+  chosen?: string,
+): string | null {
+  switch (card.attackTarget ?? "next") {
+    case "prev":
+      return stepAlive(state, actorId, -state.direction);
+    case "random":
+      return randomOpponent(state, actorId);
+    case "choose": {
+      const t = chosen ? getPlayer(state, chosen) : undefined;
+      return t && t.alive && t.id !== actorId ? t.id : null;
+    }
+    case "all":
+      return null; // handled separately (AOE)
+    case "next":
+    default:
+      return stepAlive(state, actorId, state.direction);
+  }
 }
 
 // --- Lobby mutations ------------------------------------------------------
@@ -174,6 +221,7 @@ export function startGame(state: RoomState): RoomState {
     state.hands[p.id] = drawCards(HAND_SIZE);
   }
   state.currentTurnIndex = -1; // startNextTurn will advance to 0
+  state.direction = 1;
   state.winnerId = null;
   state.pending = null;
   state.phase = "action";
@@ -194,6 +242,7 @@ export function resetToLobby(state: RoomState): RoomState {
   state.phase = "lobby";
   state.turnOrder = [];
   state.currentTurnIndex = 0;
+  state.direction = 1;
   state.hands = {};
   state.pending = null;
   state.winnerId = null;
@@ -262,9 +311,10 @@ function runBeginEffects(state: RoomState, p: Player): void {
 function startNextTurn(state: RoomState): void {
   const order = state.turnOrder;
   if (order.length === 0) return;
+  const n = order.length;
   let guard = 0;
-  while (guard++ < order.length * 4) {
-    state.currentTurnIndex = (state.currentTurnIndex + 1) % order.length;
+  while (guard++ < n * 4) {
+    state.currentTurnIndex = ((state.currentTurnIndex + state.direction) % n + n) % n;
     const pid = order[state.currentTurnIndex];
     const p = getPlayer(state, pid);
     if (!p || !p.alive || p.hp <= 0) continue;
@@ -321,7 +371,7 @@ function removeCard(state: RoomState, playerId: string, cardId: string): Card | 
 
 // --- Specials -------------------------------------------------------------
 
-function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: string): void {
+function applySpecial(state: RoomState, actor: Player, card: Card): void {
   switch (card.special) {
     case "heal": {
       const amount = card.value ?? 20;
@@ -331,6 +381,16 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
         actorId: actor.id,
         key: "log.heal",
         params: { name: actor.name, amt: amount },
+      });
+      break;
+    }
+    case "reverse": {
+      state.direction = state.direction === 1 ? -1 : 1;
+      pushEvent(state, {
+        type: "special",
+        actorId: actor.id,
+        key: "log.reverse",
+        params: { name: actor.name },
       });
       break;
     }
@@ -358,6 +418,8 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
       break;
     }
     case "skip_turn": {
+      // Skip the NEXT player (UNO Skip) — no free targeting.
+      const targetId = stepAlive(state, actor.id, state.direction);
       const target = targetId ? getPlayer(state, targetId) : undefined;
       if (!target) break;
       const chance = (card.value ?? 60) / 100;
@@ -381,20 +443,9 @@ function applySpecial(state: RoomState, actor: Player, card: Card, targetId?: st
       }
       break;
     }
-    case "limit_defense": {
-      const target = targetId ? getPlayer(state, targetId) : undefined;
-      if (!target) break;
-      target.effects.defenseLimitedTurns = 3;
-      pushEvent(state, {
-        type: "special",
-        actorId: actor.id,
-        targetId: target.id,
-        key: "log.cripple",
-        params: { name: actor.name, target: target.name },
-      });
-      break;
-    }
     case "slip_damage": {
+      // Poison the next player.
+      const targetId = stepAlive(state, actor.id, state.direction);
       const target = targetId ? getPlayer(state, targetId) : undefined;
       if (!target) break;
       target.effects.slip = { perTurn: card.value ?? 10, turnsLeft: 3 };
@@ -457,27 +508,40 @@ export function applyAction(
     case "play_special": {
       const peek = (state.hands[actorId] ?? []).find((c) => c.id === action.cardId);
       if (!peek || peek.kind !== "special") return input;
-      // Targeted specials require a valid, living target.
-      const needsTarget =
-        peek.special === "skip_turn" ||
-        peek.special === "limit_defense" ||
-        peek.special === "slip_damage";
-      if (needsTarget) {
-        const target = action.targetId ? getPlayer(state, action.targetId) : undefined;
-        if (!target || !target.alive) return input;
-      }
       const card = removeCard(state, actorId, action.cardId)!;
-      applySpecial(state, actor, card, action.targetId);
+      applySpecial(state, actor, card);
       endTurn(state, actorId);
       return bump(state);
     }
     case "play_attack": {
       const peek = (state.hands[actorId] ?? []).find((c) => c.id === action.cardId);
       if (!peek || peek.kind !== "attack") return input;
-      const target = getPlayer(state, action.targetId);
+
+      // AOE: small damage to every opponent, no defense window.
+      if (peek.attackTarget === "all") {
+        const card = removeCard(state, actorId, action.cardId)!;
+        const dmg = card.damage ?? 6;
+        pushEvent(state, {
+          type: "attack",
+          actorId: actor.id,
+          key: "log.aoe",
+          params: { name: actor.name, dmg },
+        });
+        for (const o of state.players.filter((p) => p.alive && p.id !== actorId)) {
+          dealDamage(state, o.id, dmg);
+        }
+        endTurn(state, actorId);
+        return bump(state);
+      }
+
+      // Single-target: resolve the target from the card's mode (free pick only
+      // for rare "choose" cards).
+      const targetId = attackTargetId(state, actorId, peek, action.targetId);
+      const target = targetId ? getPlayer(state, targetId) : undefined;
       if (!target || !target.alive || target.id === actorId) return input;
+
       const card = removeCard(state, actorId, action.cardId)!;
-      state.pending = { attackerId: actorId, targetId: target.id, card };
+      state.pending = { attackerId: actorId, targetId: target.id, card, hops: 0 };
       state.phase = "defense";
       pushEvent(state, {
         type: "attack",
@@ -510,33 +574,69 @@ function canRespondToAttack(state: RoomState, targetId: string): boolean {
   const attack = state.pending?.card;
   if (!attack) return false;
   return hand.some(
-    (c) => c.kind === "defense" && (attack.fatal || canDefend(attack, c)),
+    (c) =>
+      c.kind === "defense" &&
+      // pass works on anything; block/reflect need a valid color (fatal: any).
+      (c.defense === "pass" || attack.fatal || canDefend(attack, c)),
   );
+}
+
+/** Max times an attack can be forwarded (pass/chain) — around the orbit once. */
+function maxHops(state: RoomState): number {
+  return state.players.filter((p) => p.alive && p.hp > 0).length;
+}
+
+/** Forward the pending attack to the next player; auto-resolve if they can't respond. */
+function forwardPending(state: RoomState, nextId: string, hops: number): RoomState {
+  state.pending = { ...state.pending!, targetId: nextId, hops };
+  state.phase = "defense";
+  if (!canRespondToAttack(state, nextId)) {
+    return resolveDefense(state, null);
+  }
+  return bump(state);
 }
 
 function resolveDefense(state: RoomState, cardId: string | null): RoomState {
   const pending = state.pending!;
   const attacker = getPlayer(state, pending.attackerId)!;
   const target = getPlayer(state, pending.targetId)!;
+  const hops = pending.hops ?? 0;
 
+  const chosen = cardId
+    ? (state.hands[target.id] ?? []).find((c) => c.id === cardId)
+    : undefined;
+
+  // --- Pass: shove the attack onto the next player (no damage taken here). ---
+  if (chosen && chosen.kind === "defense" && chosen.defense === "pass") {
+    removeCard(state, target.id, chosen.id);
+    const nextId = stepAlive(state, target.id, state.direction);
+    pushEvent(state, {
+      type: "defend",
+      actorId: target.id,
+      key: "log.passAttack",
+      params: { target: target.name },
+    });
+    if (nextId && hops + 1 < maxHops(state)) {
+      return forwardPending(state, nextId, hops + 1);
+    }
+    // Nowhere left to send it — the attack fizzles out into space.
+    endTurn(state, pending.attackerId);
+    return bump(state);
+  }
+
+  // --- Block / reflect / take ---
   let defenseCard: Card | null = null;
-  if (cardId) {
-    const hand = state.hands[target.id] ?? [];
-    const candidate = hand.find((c) => c.id === cardId);
-    const usable =
-      candidate &&
-      candidate.kind === "defense" &&
-      canUseDefense(target) &&
-      (pending.card.fatal || canDefend(pending.card, candidate));
-    if (usable) defenseCard = candidate!;
+  if (chosen && chosen.kind === "defense" && canUseDefense(target) &&
+      (pending.card.fatal || canDefend(pending.card, chosen))) {
+    defenseCard = chosen;
   }
 
   const result = resolveAttack(pending.card, defenseCard, target.hp);
-
   if (defenseCard && result.defenseConsumed) {
     removeCard(state, target.id, defenseCard.id);
   }
 
+  let tookFull = false;
   if (result.nullified) {
     pushEvent(state, {
       type: "defend",
@@ -563,6 +663,7 @@ function resolveDefense(state: RoomState, cardId: string | null): RoomState {
     });
   } else {
     dealDamage(state, target.id, result.damageToTarget);
+    tookFull = true;
     pushEvent(state, {
       type: "attack",
       actorId: attacker.id,
@@ -570,6 +671,24 @@ function resolveDefense(state: RoomState, cardId: string | null): RoomState {
       key: "log.takeDamage",
       params: { target: target.name, dmg: result.damageToTarget },
     });
+  }
+
+  // --- Chain: an undefended hit continues to the next player. ---
+  if (pending.card.chain && tookFull && hops + 1 < maxHops(state)) {
+    checkWin(state);
+    if (state.phase !== "finished") {
+      const nextId = stepAlive(state, target.id, state.direction);
+      if (nextId) {
+        pushEvent(state, {
+          type: "attack",
+          actorId: attacker.id,
+          targetId: nextId,
+          key: "log.chain",
+          params: { target: getPlayer(state, nextId)?.name ?? "?" },
+        });
+        return forwardPending(state, nextId, hops + 1);
+      }
+    }
   }
 
   endTurn(state, pending.attackerId);
