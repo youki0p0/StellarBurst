@@ -14,9 +14,11 @@ import {
   unsubscribeRoom,
 } from "@/lib/db";
 import {
+  addCpuPlayer,
   applyAction,
   currentPlayerId,
   generateRoomCode,
+  removePlayer,
   resetToLobby,
   startGame,
 } from "@/lib/room";
@@ -29,6 +31,7 @@ let roomId: string | null = null;
 let myPlayerId: string | null = null;
 let cpuTimer: ReturnType<typeof setTimeout> | null = null;
 let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 let applying = false;
 
 interface Identity {
@@ -57,8 +60,11 @@ interface GameStore {
   setName: (name: string) => void;
   createRoom: () => Promise<string | null>;
   joinRoom: (code: string) => Promise<boolean>;
+  startSolo: (cpuCount?: number) => Promise<string | null>;
   leaveRoom: () => void;
   toggleReady: () => void;
+  addCpu: () => void;
+  removeCpu: (id: string) => void;
   startMatch: () => void;
   restart: () => void;
   sendGameAction: (action: GameAction) => void;
@@ -68,12 +74,25 @@ export const useGameStore = create<GameStore>((set, get) => {
   function teardown() {
     if (cpuTimer) clearTimeout(cpuTimer);
     if (reloadTimer) clearTimeout(reloadTimer);
+    if (pollTimer) clearInterval(pollTimer);
     cpuTimer = null;
     reloadTimer = null;
+    pollTimer = null;
     unsubscribeRoom(channel);
     channel = null;
     roomId = null;
     myPlayerId = null;
+  }
+
+  /**
+   * Periodic refresh as a safety net: if a Realtime event is missed (or the
+   * tables aren't on the realtime publication yet), clients still converge.
+   */
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => {
+      if (!applying) void reload();
+    }, 2500);
   }
 
   /** Reload authoritative state from the DB and refresh derived flags. */
@@ -182,6 +201,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       roomId = res.roomId;
       myPlayerId = res.playerId;
       channel = subscribeRoom(roomId, scheduleReload);
+      startPolling();
       await reload();
       set({ connecting: false, isHost: true });
       return code;
@@ -209,9 +229,21 @@ export const useGameStore = create<GameStore>((set, get) => {
       roomId = res.roomId;
       myPlayerId = res.playerId;
       channel = subscribeRoom(roomId, scheduleReload);
+      startPolling();
       await reload();
       set({ connecting: false });
       return true;
+    },
+
+    startSolo: async (cpuCount = 3) => {
+      const code = await get().createRoom();
+      if (!code) return null;
+      const bots = Math.max(1, Math.min(cpuCount, 7));
+      for (let i = 0; i < bots; i++) {
+        await applyAndPersist((s) => addCpuPlayer(s));
+      }
+      await applyAndPersist((s) => startGame(s));
+      return code;
     },
 
     leaveRoom: () => {
@@ -228,6 +260,10 @@ export const useGameStore = create<GameStore>((set, get) => {
       if (!me) return;
       void setReadyRow(me.id, !me.isReady);
     },
+
+    addCpu: () => void applyAndPersist((s) => addCpuPlayer(s)),
+
+    removeCpu: (id) => void applyAndPersist((s) => removePlayer(s, id)),
 
     startMatch: () => void applyAndPersist((s) => startGame(s)),
 

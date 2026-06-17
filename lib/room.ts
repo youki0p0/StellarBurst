@@ -134,13 +134,25 @@ export function setReady(state: RoomState, id: string, ready: boolean): RoomStat
 
 // --- Game start -----------------------------------------------------------
 
+/** Add a CPU opponent in the lobby (e.g. for solo / practice play). */
+export function addCpuPlayer(state: RoomState): RoomState {
+  if (state.phase !== "lobby") return state;
+  if (state.players.length >= MAX_PLAYERS) return state;
+  const cpuId = newId();
+  const n = state.players.filter((p) => p.isCPU).length + 1;
+  state.players.push(makePlayer(cpuId, `CPU ${n}`, { isCPU: true, clientId: cpuId }));
+  return bump(state);
+}
+
 export function startGame(state: RoomState): RoomState {
   if (state.phase !== "lobby") return state;
   const humans = state.players.filter((p) => !p.isCPU);
-  if (humans.length < 2) return state; // need at least two humans
+  if (humans.length < 1) return state; // need at least one human
+  if (state.players.length < 2) return state; // need at least two participants
 
-  // If exactly two humans start, drop in a single CPU rival.
-  if (humans.length === 2 && state.players.length < MAX_PLAYERS) {
+  // Spec convenience: if exactly two humans start with no bots, add 1 CPU rival.
+  const hasCpu = state.players.some((p) => p.isCPU);
+  if (humans.length === 2 && !hasCpu && state.players.length < MAX_PLAYERS) {
     const cpuId = newId();
     state.players.push(
       makePlayer(cpuId, "CPU Rival", { isCPU: true, clientId: cpuId }),

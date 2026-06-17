@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { HAND_SIZE } from "./cards";
 import {
+  addCpuPlayer,
   addPlayer,
   applyAction,
   createRoomState,
@@ -31,6 +32,30 @@ describe("startGame", () => {
       expect(s.hands[p.id]).toHaveLength(HAND_SIZE);
       expect(p.hp).toBe(100);
     }
+  });
+});
+
+describe("solo / CPU lobby", () => {
+  it("starts a solo match with one human plus added CPUs", () => {
+    const host = makePlayer("h", "Host", { isHost: true });
+    host.isReady = true;
+    let s = createRoomState("SOLO", host);
+    s = addCpuPlayer(s);
+    s = addCpuPlayer(s);
+    expect(s.players).toHaveLength(3);
+
+    s = startGame(s);
+    expect(s.phase).toBe("action");
+    // No extra auto-add when bots are already present.
+    expect(s.players.filter((p) => p.isCPU)).toHaveLength(2);
+    expect(s.turnOrder).toHaveLength(3);
+  });
+
+  it("does not start with only one participant", () => {
+    const host = makePlayer("h", "Host", { isHost: true });
+    host.isReady = true;
+    const s = startGame(createRoomState("SOLO", host));
+    expect(s.phase).toBe("lobby");
   });
 });
 
