@@ -42,10 +42,10 @@ export function OrbitBoard(props: OrbitBoardProps) {
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-md">
-      {/* Faint orbit ring (matches the star radius below) */}
+      {/* Faint orbit ring (passes through each star's outer anchor point) */}
       <div
         className="pointer-events-none absolute rounded-full border border-board-600/60"
-        style={{ left: "13%", top: "13%", width: "74%", height: "74%" }}
+        style={{ left: "6%", top: "6%", width: "88%", height: "88%" }}
         aria-hidden
       />
 
@@ -69,13 +69,18 @@ export function OrbitBoard(props: OrbitBoardProps) {
       </div>
 
       {/* Stars evenly spaced on the orbit. Two stars sit left/right; everything
-          else fans out from the top (3 → even thirds, 4 → diamond, …). The 37%
-          radius keeps each token fully inside the square on small screens. */}
+          else fans out from the top (3 → even thirds, 4 → diamond, …). Each
+          token is anchored at its ring point and grows *inward* toward the core,
+          so it never spills past the board edge regardless of its size. */}
       {players.map((p, i) => {
         const startDeg = n === 2 ? 180 : -90;
         const angle = (startDeg + (i * 360) / n) * (Math.PI / 180);
-        const left = 50 + 37 * Math.cos(angle);
-        const top = 50 + 37 * Math.sin(angle);
+        const radius = 44;
+        const left = 50 + radius * Math.cos(angle);
+        const top = 50 + radius * Math.sin(angle);
+        // Pull the token inward from its ring point along the radial direction.
+        const tx = -50 - 50 * Math.cos(angle);
+        const ty = -50 - 50 * Math.sin(angle);
 
         const isTurn = turnId !== null && p.id === turnId;
         const isSelf = p.clientId === selfClientId;
@@ -88,7 +93,7 @@ export function OrbitBoard(props: OrbitBoardProps) {
         const hpRatio = p.maxHp > 0 ? Math.max(0, Math.min(1, p.hp / p.maxHp)) : 0;
 
         const tokenClasses = [
-          "relative flex w-[4.25rem] flex-col items-center gap-0.5 rounded-lg border px-1.5 py-1 text-center transition",
+          "relative flex w-[4.5rem] flex-col items-center gap-0.5 rounded-lg border px-1.5 py-1 text-center transition",
           "bg-board-800/90 backdrop-blur-sm",
           dead ? "border-board-700 opacity-40 grayscale" : "border-board-600",
           isTurn ? "ring-2 ring-neon-cyan shadow-neon animate-pulse" : "",
@@ -103,10 +108,12 @@ export function OrbitBoard(props: OrbitBoardProps) {
           .filter(Boolean)
           .join(" ");
 
-        const style: CSSProperties = {
+        // Position lives on the wrapper; the token keeps `transform` free for
+        // the flash "pop" (a scale animation) so it never jumps on hit.
+        const posStyle: CSSProperties = {
           left: `${left}%`,
           top: `${top}%`,
-          transform: "translate(-50%, -50%)",
+          transform: `translate(${tx}%, ${ty}%)`,
         };
 
         const inner = (
@@ -179,23 +186,15 @@ export function OrbitBoard(props: OrbitBoardProps) {
           </>
         );
 
-        if (isSelectable) {
-          return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onSelect?.(p.id)}
-              className={`absolute ${tokenClasses}`}
-              style={style}
-            >
-              {inner}
-            </button>
-          );
-        }
-
         return (
-          <div key={p.id} className={`absolute ${tokenClasses}`} style={style}>
-            {inner}
+          <div key={p.id} className="absolute" style={posStyle}>
+            {isSelectable ? (
+              <button type="button" onClick={() => onSelect?.(p.id)} className={tokenClasses}>
+                {inner}
+              </button>
+            ) : (
+              <div className={tokenClasses}>{inner}</div>
+            )}
           </div>
         );
       })}
