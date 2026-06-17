@@ -41,10 +41,11 @@ function emptyEffects(): PlayerEffects {
 export function makePlayer(
   id: string,
   name: string,
-  opts: { isHost?: boolean; isCPU?: boolean } = {},
+  opts: { isHost?: boolean; isCPU?: boolean; clientId?: string } = {},
 ): Player {
   return {
     id,
+    clientId: opts.clientId ?? id,
     name,
     hp: MAX_HP,
     maxHp: MAX_HP,
@@ -55,6 +56,13 @@ export function makePlayer(
     connected: true,
     effects: emptyEffects(),
   };
+}
+
+/** Cross-environment uuid (browser + node test runner both have it). */
+export function newId(): string {
+  return globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `id_${Math.random().toString(36).slice(2)}_${Date.now()}`;
 }
 
 export function createRoomState(code: string, host: Player): RoomState {
@@ -133,7 +141,10 @@ export function startGame(state: RoomState): RoomState {
 
   // If exactly two humans start, drop in a single CPU rival.
   if (humans.length === 2 && state.players.length < MAX_PLAYERS) {
-    state.players.push(makePlayer(`cpu_${Date.now()}`, "CPU Rival", { isCPU: true }));
+    const cpuId = newId();
+    state.players.push(
+      makePlayer(cpuId, "CPU Rival", { isCPU: true, clientId: cpuId }),
+    );
   }
 
   const rng = mulberry32(state.seed);

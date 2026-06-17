@@ -1,10 +1,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// New-style browser-safe publishable key (sb_publishable_...). We also accept
+// the legacy anon-key var name as a fallback so existing setups keep working.
+const publishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /** True when both required env vars are present. */
-export const isSupabaseConfigured = Boolean(url && anonKey);
+export const isSupabaseConfigured = Boolean(url && publishableKey);
 
 let client: SupabaseClient | null = null;
 
@@ -15,7 +19,7 @@ let client: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient | null {
   if (!isSupabaseConfigured) return null;
   if (!client) {
-    client = createClient(url!, anonKey!, {
+    client = createClient(url!, publishableKey!, {
       realtime: { params: { eventsPerSecond: 10 } },
     });
   }

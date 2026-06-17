@@ -25,18 +25,27 @@ Next.js 15 (App Router) · TypeScript · Tailwind CSS · Zustand · Supabase Rea
 
 ### Architecture
 
-- **Host-authoritative netcode** over Supabase Realtime **Broadcast + Presence**
-  — no database tables or RLS to configure (free tier is enough). The room
-  creator runs the single reducer (`lib/room.ts`), validates every action, and
-  broadcasts authoritative `RoomState` + append-only `GameEvent[]` to all clients.
-- Clients send action *requests*; only the host mutates state.
+- **Supabase Postgres + Realtime.** State lives in three tables —
+  `rooms` (`state` jsonb + `version` for optimistic concurrency),
+  `players` (HP, hand, ready, CPU flag, effects), and `game_events`
+  (append-only battle log). See `supabase/schema.sql` and `SUPABASE_SETUP.md`.
+- The pure reducer in `lib/room.ts` is the single brain: clients
+  **load → reduce (`applyAction`) → persist** back with an optimistic
+  `version` check, so concurrent writers can't clobber each other. Illegal
+  actions are rejected by the reducer's validation.
+- Every client **subscribes via `postgres_changes`** (rooms/players/game_events
+  filtered by room) in `lib/db.ts` and reloads on any change. The host client
+  also drives CPU turns.
+- No login required: a stable `client_id` is generated in `localStorage`.
 - Pure, testable game logic lives in `lib/{cards,rules,cpu,room}.ts`.
+- Card faces are **original pixel-art SVG sprites** (`components/art/*`), no emoji.
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in your Supabase URL + anon key
+cp .env.example .env.local   # fill in your Supabase URL + publishable key
+# In the Supabase SQL editor, run supabase/schema.sql once.
 npm run dev
 ```
 
@@ -48,7 +57,9 @@ crashing.
 | Variable | Description |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser-safe publishable key (`sb_publishable_…`); the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` also works as a fallback |
+
+> Never put a `service_role` / secret key in a `NEXT_PUBLIC_` variable.
 
 ## Scripts
 
@@ -61,13 +72,14 @@ npm test        # vitest (core rule logic)
 
 ## Deploy to Vercel
 
-Import the repo, set the two env vars in Project Settings → Environment
-Variables, and deploy. The app is fully client-rendered, so no extra server
-configuration is required.
+1. Run `supabase/schema.sql` in your Supabase project's SQL editor.
+2. Import the repo into Vercel and set `NEXT_PUBLIC_SUPABASE_URL` +
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Production / Preview / Development).
+3. Deploy. The app is fully client-rendered, so no extra server config is needed.
 
 ## Known limitations
 
-- State lives on the host client. If the **host** hard-refreshes mid-match, the
-  authoritative state is lost (other players can refresh and rejoin fine).
-- Hands are broadcast in full state for simplicity — fine for a casual party
-  game, but not cheat-proof.
+- The dev RLS policies in `schema.sql` are intentionally permissive for
+  friend-testing; tighten them before any public release (see `SUPABASE_SETUP.md`).
+- Player hands are stored in the (readable) `players` table for simplicity —
+  fine for a casual party game, but not cheat-proof.

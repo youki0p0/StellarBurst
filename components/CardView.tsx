@@ -1,6 +1,7 @@
 "use client";
 
 import type { Card, CardColor } from "@/lib/types";
+import { CardArt } from "./CardArt";
 
 const COLOR_RING: Record<CardColor, string> = {
   colorless: "border-card-colorless/70 from-slate-600/40",
@@ -57,6 +58,10 @@ export function CardView({
           {KIND_LABEL[card.kind]}
         </span>
         <span className={`h-2.5 w-2.5 rounded-full ${COLOR_DOT[card.color]}`} />
+      </div>
+
+      <div className="flex items-center justify-center">
+        <CardArt card={card} px={compact ? 30 : 44} />
       </div>
 
       <div className="leading-tight">
