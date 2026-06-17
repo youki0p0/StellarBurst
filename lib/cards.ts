@@ -1,4 +1,10 @@
-import type { Card, CardColor, DefenseEffect, SpecialEffect } from "./types";
+import type {
+  AttackTarget,
+  Card,
+  CardColor,
+  DefenseEffect,
+  SpecialEffect,
+} from "./types";
 
 /**
  * Deterministic PRNG (mulberry32). Used for turn-order shuffling so every
@@ -50,14 +56,15 @@ export const COLORLESS_ATTACK_RATIO = 0.6;
 const DEFENSE_META: Record<DefenseEffect, { name: string; description: string }> = {
   block: { name: "Guard", description: "Block all damage from one attack." },
   reflect: { name: "Mirror Ward", description: "Block all damage and reflect it back at the attacker." },
+  pass: { name: "Pass", description: "Shove the incoming attack onto the next player." },
 };
 
 const SPECIAL_META: Record<SpecialEffect, { name: string; description: string }> = {
   heal: { name: "Mend", description: "Restore some of your own HP." },
   shuffle_hands: { name: "Chaos Swap", description: "Shuffle and redeal every player's hand." },
-  skip_turn: { name: "Stagger", description: "Chance to skip the target's next action." },
-  limit_defense: { name: "Cripple", description: "Target cannot defend for 3 turns." },
-  slip_damage: { name: "Venom", description: "Target takes damage over their next 3 turns." },
+  skip_turn: { name: "Skip", description: "Skip the next player's turn." },
+  reverse: { name: "Reverse", description: "Reverse the turn order." },
+  slip_damage: { name: "Venom", description: "The next player takes damage over 3 turns." },
 };
 
 function makeAttack(rng: () => number): Card {
@@ -65,30 +72,51 @@ function makeAttack(rng: () => number): Card {
     rng() < COLORLESS_ATTACK_RATIO
       ? "colorless"
       : COLORED[Math.floor(rng() * COLORED.length)];
-  const fatal = rng() < 0.08; // rare fatal cards
-  const damage = 10 + Math.floor(rng() * 21); // 10..30
-  const colorLabel = color === "colorless" ? "Plain" : color[0].toUpperCase() + color.slice(1);
+  // Flow-based targeting: mostly "next"; free-pick ("choose") is rare.
+  const target = weightedPick<AttackTarget>(
+    [
+      ["next", 50],
+      ["prev", 12],
+      ["random", 12],
+      ["all", 12],
+      ["choose", 6],
+    ],
+    rng,
+  );
+  const isAoe = target === "all";
+  const chain = target === "next" && rng() < 0.2;
+  const fatal = !isAoe && !chain && rng() < 0.06; // rare, never on AOE/chain
+  const damage = isAoe ? 5 + Math.floor(rng() * 6) : 10 + Math.floor(rng() * 16);
   return {
     id: nextCardId(),
     kind: "attack",
     color,
-    name: fatal ? "Fatal Strike" : `${colorLabel} Strike`,
+    name: "",
+    description: "",
     damage,
     fatal,
-    description: fatal
-      ? "A lethal blow. Any defense card may be spent to nullify it."
-      : `Deal ${damage} damage.`,
+    attackTarget: target,
+    chain: chain || undefined,
   };
 }
 
 const ALL_COLORS: CardColor[] = ["colorless", "red", "blue", "green"];
 
 function makeDefense(rng: () => number): Card {
-  // Block is the common defense; reflect is the rarer, stronger one.
-  const effect: DefenseEffect = rng() < 0.7 ? "block" : "reflect";
-  // Colors are uniform; a colored defense only stops its color (plus colorless
-  // attacks), a colorless defense only stops colorless attacks.
-  const color = ALL_COLORS[Math.floor(rng() * ALL_COLORS.length)];
+  // block: cut all · reflect: cut + bounce back · pass: shove onto next player.
+  const effect = weightedPick<DefenseEffect>(
+    [
+      ["block", 5],
+      ["reflect", 3],
+      ["pass", 3],
+    ],
+    rng,
+  );
+  // Pass works regardless of color (it forwards, not blocks), so it's colorless.
+  // Colored defenses stop their color (+ colorless attacks); colorless stops
+  // only colorless attacks.
+  const color: CardColor =
+    effect === "pass" ? "colorless" : ALL_COLORS[Math.floor(rng() * ALL_COLORS.length)];
   const meta = DEFENSE_META[effect];
   return {
     id: nextCardId(),
@@ -101,12 +129,13 @@ function makeDefense(rng: () => number): Card {
 }
 
 function makeSpecial(rng: () => number): Card {
+  // Flow-disrupting cards are emphasised over raw stats.
   const effect = weightedPick<SpecialEffect>(
     [
+      ["reverse", 3],
+      ["skip_turn", 3],
       ["heal", 3],
-      ["shuffle_hands", 1],
-      ["skip_turn", 2],
-      ["limit_defense", 1],
+      ["shuffle_hands", 2],
       ["slip_damage", 2],
     ],
     rng,

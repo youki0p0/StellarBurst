@@ -71,6 +71,7 @@ describe("attack resolution through the reducer", () => {
       color: "colorless",
       name: "Test Strike",
       damage: 20,
+      attackTarget: "choose", // deterministic target for the test
       description: "",
     };
     s.hands[attackerId] = [card, ...s.hands[attackerId]];
@@ -100,6 +101,7 @@ describe("attack resolution through the reducer", () => {
       name: "Fatal Strike",
       damage: 30,
       fatal: true,
+      attackTarget: "choose",
       description: "",
     };
     const shield: Card = {
@@ -121,6 +123,49 @@ describe("attack resolution through the reducer", () => {
     const after = s.players.find((p) => p.id === target.id)!;
     expect(after.hp).toBe(hpBefore); // fully negated
     expect(after.alive).toBe(true);
+  });
+});
+
+describe("flow-based targeting", () => {
+  function atkCard(id: string, target: Card["attackTarget"], dmg = 15): Card {
+    return { id, kind: "attack", color: "colorless", name: "", description: "", damage: dmg, attackTarget: target };
+  }
+
+  it('"next" flare hits the next star in orbit', () => {
+    let s = freshGame();
+    const attacker = currentPlayerId(s)!;
+    const ai = s.turnOrder.indexOf(attacker);
+    const nextId = s.turnOrder[(ai + 1) % s.turnOrder.length];
+    s.hands[attacker] = [atkCard("n1", "next")];
+    // Give the target no shields so it auto-resolves (takes the hit).
+    s.hands[nextId] = [atkCard("x", "next")];
+    const before = s.players.find((p) => p.id === nextId)!.hp;
+
+    s = applyAction(s, { type: "play_attack", cardId: "n1" }, attacker);
+    expect(s.players.find((p) => p.id === nextId)!.hp).toBe(before - 15);
+  });
+
+  it("AOE flare dims every other star", () => {
+    let s = freshGame();
+    const attacker = currentPlayerId(s)!;
+    s.hands[attacker] = [atkCard("aoe", "all", 6)];
+    const before = new Map(s.players.map((p) => [p.id, p.hp]));
+
+    s = applyAction(s, { type: "play_attack", cardId: "aoe" }, attacker);
+    for (const p of s.players) {
+      if (p.id === attacker) expect(p.hp).toBe(before.get(p.id));
+      else expect(p.hp).toBe(before.get(p.id)! - 6);
+    }
+  });
+
+  it("Retrograde reverses the orbit direction", () => {
+    let s = freshGame();
+    const dir = s.direction;
+    const actor = currentPlayerId(s)!;
+    const rev: Card = { id: "rev", kind: "special", color: "colorless", name: "", description: "", special: "reverse" };
+    s.hands[actor] = [rev];
+    s = applyAction(s, { type: "play_special", cardId: "rev" }, actor);
+    expect(s.direction).toBe(dir === 1 ? -1 : 1);
   });
 });
 

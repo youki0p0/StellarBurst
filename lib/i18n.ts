@@ -70,15 +70,16 @@ const DICT: Record<string, Entry> = {
   "lobby.ready": { ja: "準備OK", en: "READY" },
 
   // Game
-  "game.currentTurn": { ja: "現在のターン", en: "Current turn" },
+  "game.currentTurn": { ja: "現在の軌道", en: "Current orbit" },
   "game.yourMove": { ja: "あなたの番！", en: "your move!" },
   "game.room": { ja: "ルーム", en: "Room" },
-  "game.selectTarget": { ja: "上から対象を選択", en: "Select a target above" },
-  "game.incoming": { ja: "着弾", en: "Incoming" },
-  "game.fatal": { ja: "致命", en: "FATAL" },
-  "game.defendQ": { ja: "防御する？", en: "Defend?" },
-  "game.crippled": { ja: "今は防御が封じられています。", en: "Your defense is crippled right now." },
-  "game.takeHit": { ja: "そのまま受ける", en: "Take the hit" },
+  "game.orbit": { ja: "軌道", en: "Orbit" },
+  "game.selectTarget": { ja: "標的の星を選択", en: "Pick a target star" },
+  "game.incoming": { ja: "来るフレア", en: "Incoming flare" },
+  "game.fatal": { ja: "超新星", en: "SUPERNOVA" },
+  "game.defendQ": { ja: "どうする？", en: "Respond?" },
+  "game.crippled": { ja: "今は星盾を張れません。", en: "Your shields are down right now." },
+  "game.takeHit": { ja: "減光を受ける", en: "Take the light loss" },
   "game.play": { ja: "使う", en: "Play" },
   "game.cancel": { ja: "キャンセル", en: "Cancel" },
   "game.passTurn": { ja: "ターンをパス", en: "Pass turn" },
@@ -124,50 +125,50 @@ const DICT: Record<string, Entry> = {
   "log.begin": { ja: "バトル開始！", en: "The battle begins!" },
   "log.joined": { ja: "{name} が参加しました。", en: "{name} joined the room." },
   "log.rematch": { ja: "ロビーに戻りました（再戦）。", en: "Returned to the lobby for a rematch." },
-  "log.pass": { ja: "{name} はパスした。", en: "{name} passes." },
-  "log.eliminate": { ja: "{name} は敗北した！", en: "{name} has been defeated!" },
-  "log.win": { ja: "{name} が最後の生き残り！", en: "{name} is the last one standing!" },
-  "log.slipTick": { ja: "{name} は毒で {dmg} ダメージ。", en: "{name} takes {dmg} slip damage." },
-  "log.skipped": { ja: "{name} のターンは飛ばされた。", en: "{name}'s turn was skipped." },
-  "log.heal": { ja: "{name} は {amt} 回復した。", en: "{name} heals {amt} HP." },
+  "log.pass": { ja: "{name} は軌道で様子を見た。", en: "{name} holds position." },
+  "log.eliminate": { ja: "{name} の光が尽き、暗転した…", en: "{name} has darkened…" },
+  "log.win": { ja: "最後の星は {name}！", en: "{name} is the Last Star!" },
+  "log.slipTick": { ja: "{name} は流星侵食で {dmg} 減光。", en: "{name} decays for {dmg} light." },
+  "log.skipped": { ja: "{name} は日食に覆われ行動できない。", en: "{name} is eclipsed — turn skipped." },
+  "log.heal": { ja: "{name} が {amt} 再点火した。", en: "{name} rekindles {amt} light." },
   "log.shuffle": {
-    ja: "{name} が混沌の交換！全員の手札がシャッフルされた。",
-    en: "{name} unleashes Chaos Swap — everyone's hands are reshuffled!",
+    ja: "{name} の星雲嵐！全員の手札が乱れた。",
+    en: "{name}'s nebula storm scrambles every hand!",
   },
   "log.skipOk": {
-    ja: "{name} は {target} をひるませた——次のターンを飛ばす！",
-    en: "{name} staggers {target} — their next turn will be skipped!",
+    ja: "{name} が {target} を日食で覆った——次の行動を飛ばす！",
+    en: "{name} eclipses {target} — their next turn is skipped!",
   },
   "log.skipFail": {
-    ja: "{name} は {target} をひるませようとしたが失敗した。",
-    en: "{name} tried to stagger {target}, but it failed.",
+    ja: "{name} の日食は {target} に届かなかった。",
+    en: "{name}'s eclipse misses {target}.",
   },
-  "log.cripple": {
-    ja: "{name} は {target} の防御を3ターン封じた！",
-    en: "{name} cripples {target} — no defense for 3 turns!",
-  },
-  "log.slip": { ja: "{name} は {target} に毒を盛った（3ターン）。", en: "{name} poisons {target} for 3 turns." },
+  "log.slip": { ja: "{name} が {target} に流星侵食を付与（3ターン）。", en: "{name} sets meteor decay on {target} for 3 turns." },
+  "log.reverse": { ja: "{name} が軌道を逆行させた！", en: "{name} reverses the orbit!" },
+  "log.aoe": { ja: "{name} のメテオ！全ての星が {dmg} 減光。", en: "{name}'s meteor — every star loses {dmg} light!" },
+  "log.passAttack": { ja: "{target} はフレアを次の星へ受け流した！", en: "{target} shoves the flare onward!" },
+  "log.chain": { ja: "流星が {target} へ連鎖！", en: "The meteor chains to {target}!" },
   "log.attack": {
-    ja: "{name} は {card}（{dmg}）で {target} を攻撃。",
-    en: "{name} attacks {target} with {card} ({dmg}).",
+    ja: "{name} の {card} が {target} を直撃（{dmg} 減光）。",
+    en: "{name}'s {card} flares {target} ({dmg} light).",
   },
   "log.attackFatal": {
-    ja: "{name} は致命の {card} を {target} に放った！",
-    en: "{name} launches a FATAL {card} at {target}!",
+    ja: "{name} の超新星が {target} を呑み込む！",
+    en: "{name}'s supernova engulfs {target}!",
   },
   "log.negate": {
-    ja: "{target} は {card} で致命の一撃を無効化！",
-    en: "{target} spends {card} to negate the fatal blow!",
+    ja: "{target} は {card} で超新星を相殺！",
+    en: "{target} negates the supernova with {card}!",
   },
   "log.reflect": {
-    ja: "{target} は {dmg} ダメージを {attacker} に跳ね返した！",
-    en: "{target} reflects {dmg} damage back at {attacker}!",
+    ja: "{target} が {dmg} を {attacker} へ重力反射！",
+    en: "{target} reflects {dmg} light back at {attacker}!",
   },
   "log.block": {
-    ja: "{target} は {card} で防御し、{dmg} ダメージを受けた。",
-    en: "{target} blocks with {card}, taking {dmg} damage.",
+    ja: "{target} は {card} で減光を防いだ。",
+    en: "{target} shields with {card}.",
   },
-  "log.takeDamage": { ja: "{target} は {dmg} ダメージを受けた。", en: "{target} takes {dmg} damage." },
+  "log.takeDamage": { ja: "{target} は {dmg} 減光。", en: "{target} loses {dmg} light." },
 
   // Card kind labels
   "kind.attack": { ja: "攻", en: "ATK" },
@@ -209,60 +210,73 @@ export function t(
 // --- Card text localization ------------------------------------------------
 
 const DEFENSE_TEXT: Record<string, Entry> = {
-  block: { ja: "攻撃のダメージを全てカットする。", en: "Block all damage from one attack." },
+  block: { ja: "フレアの減光を全てカット（星盾）。", en: "Block all light loss from one flare." },
   reflect: {
-    ja: "ダメージを全てカットし、相手に跳ね返す。",
-    en: "Block all damage and reflect it back at the attacker.",
+    ja: "全てカットし、重力で相手に反射する。",
+    en: "Block all light loss and reflect it back at the attacker.",
+  },
+  pass: {
+    ja: "受けたフレアを次の星へ受け流す。",
+    en: "Shove the incoming flare onto the next star.",
   },
 };
 
 const SPECIAL_TEXT: Record<string, Entry> = {
-  heal: { ja: "自分のHPを回復する。", en: "Restore some of your own HP." },
-  shuffle_hands: { ja: "全員の手札をシャッフルして配り直す。", en: "Shuffle and redeal every player's hand." },
-  skip_turn: { ja: "一定確率で相手の次の行動を飛ばす。", en: "Chance to skip the target's next action." },
-  limit_defense: { ja: "相手は3ターン防御できなくなる。", en: "Target cannot defend for 3 turns." },
-  slip_damage: { ja: "相手は次の3ターン、継続ダメージを受ける。", en: "Target takes damage over their next 3 turns." },
+  heal: { ja: "自分の輝度を回復する（再点火）。", en: "Rekindle some of your own light." },
+  shuffle_hands: { ja: "星雲嵐で全員の手札を配り直す。", en: "A nebula storm reshuffles every hand." },
+  skip_turn: { ja: "日食で次の星の行動を飛ばす。", en: "Eclipse the next star — they skip a turn." },
+  reverse: { ja: "軌道を逆行させる。", en: "Reverse the orbit direction." },
+  slip_damage: { ja: "次の星を流星侵食（3ターン減光）。", en: "Meteor decay: the next star loses light for 3 turns." },
 };
 
 const CARD_NAME: Record<string, Entry> = {
-  "cardname.fatal": { ja: "致命の一撃", en: "Fatal Strike" },
-  "cardname.sword": { ja: "斬撃", en: "Plain Strike" },
-  "cardname.flame": { ja: "火炎斬", en: "Red Strike" },
-  "cardname.bolt": { ja: "雷撃", en: "Blue Strike" },
-  "cardname.claw": { ja: "爪撃", en: "Green Strike" },
-  "cardname.guard": { ja: "ガード", en: "Guard" },
-  "cardname.mirror": { ja: "反射の鏡", en: "Mirror Ward" },
-  "cardname.mend": { ja: "回復", en: "Mend" },
-  "cardname.chaos": { ja: "混沌の交換", en: "Chaos Swap" },
-  "cardname.stagger": { ja: "ひるませ", en: "Stagger" },
-  "cardname.cripple": { ja: "防御封じ", en: "Cripple" },
-  "cardname.venom": { ja: "毒", en: "Venom" },
+  // Flares (attacks)
+  "cardname.supernova": { ja: "超新星", en: "Supernova" },
+  "cardname.meteorshower": { ja: "流星群", en: "Meteor Shower" },
+  "cardname.meteorshot": { ja: "メテオショット", en: "Meteor Shot" },
+  "cardname.solar": { ja: "ソーラーフレア", en: "Solar Flare" },
+  "cardname.redgiant": { ja: "赤色巨星", en: "Red Giant Burst" },
+  "cardname.comet": { ja: "ブルーコメット", en: "Blue Comet" },
+  "cardname.aurora": { ja: "グリーンオーロラ", en: "Green Aurora" },
+  // Shields (defense)
+  "cardname.starshield": { ja: "星盾", en: "Star Shield" },
+  "cardname.mirrororbit": { ja: "重力反射", en: "Mirror Orbit" },
+  "cardname.gravitypass": { ja: "軌道流し", en: "Gravity Pass" },
+  // Specials
+  "cardname.rekindle": { ja: "星核再燃", en: "Core Rekindle" },
+  "cardname.nebula": { ja: "星雲シャッフル", en: "Nebula Shuffle" },
+  "cardname.eclipse": { ja: "日食", en: "Eclipse" },
+  "cardname.retrograde": { ja: "逆行", en: "Retrograde" },
+  "cardname.decay": { ja: "流星侵食", en: "Meteor Decay" },
 };
 
 /** Stable i18n key for a card's name, derived from its attributes. */
 export function cardNameKey(card: Card): string {
   if (card.kind === "attack") {
-    if (card.fatal) return "cardname.fatal";
-    if (card.color === "red") return "cardname.flame";
-    if (card.color === "blue") return "cardname.bolt";
-    if (card.color === "green") return "cardname.claw";
-    return "cardname.sword";
+    if (card.fatal) return "cardname.supernova";
+    if (card.chain) return "cardname.meteorshower";
+    if (card.attackTarget === "all") return "cardname.meteorshot";
+    if (card.color === "red") return "cardname.redgiant";
+    if (card.color === "blue") return "cardname.comet";
+    if (card.color === "green") return "cardname.aurora";
+    return "cardname.solar";
   }
   if (card.kind === "defense") {
     const map: Record<string, string> = {
-      block: "cardname.guard",
-      reflect: "cardname.mirror",
+      block: "cardname.starshield",
+      reflect: "cardname.mirrororbit",
+      pass: "cardname.gravitypass",
     };
-    return map[card.defense ?? ""] ?? "cardname.guard";
+    return map[card.defense ?? ""] ?? "cardname.starshield";
   }
   const map: Record<string, string> = {
-    heal: "cardname.mend",
-    shuffle_hands: "cardname.chaos",
-    skip_turn: "cardname.stagger",
-    limit_defense: "cardname.cripple",
-    slip_damage: "cardname.venom",
+    heal: "cardname.rekindle",
+    shuffle_hands: "cardname.nebula",
+    skip_turn: "cardname.eclipse",
+    reverse: "cardname.retrograde",
+    slip_damage: "cardname.decay",
   };
-  return map[card.special ?? ""] ?? "cardname.mend";
+  return map[card.special ?? ""] ?? "cardname.rekindle";
 }
 
 /** Localized card name. */
@@ -275,17 +289,25 @@ export function localizeCardNameKey(key: string, lang: Lang): string {
   return CARD_NAME[key]?.[lang] ?? key;
 }
 
-/** Localized description for a card (name stays as authored). */
+/** Localized description for a card. */
 export function localizeCardDescription(card: Card, lang: Lang): string {
+  const ja = lang === "ja";
   if (card.kind === "attack") {
-    if (card.fatal) {
-      return lang === "ja"
-        ? "致命の一撃。防御カード1枚で無効化できる。"
-        : "A lethal blow. Any defense card may be spent to nullify it.";
+    const d = card.damage ?? 0;
+    if (card.fatal) return ja ? "超新星。星盾1枚で防げる。" : "Supernova. Any shield negates it.";
+    if (card.chain) return ja ? `${d} 減光。防がれなければ次の星へ連鎖。` : `${d} light loss; chains to the next star if undefended.`;
+    switch (card.attackTarget) {
+      case "all":
+        return ja ? `全ての星が ${d} 減光。` : `Every other star loses ${d} light.`;
+      case "prev":
+        return ja ? `逆行方向の星へ ${d} 減光。` : `${d} light loss to the previous star.`;
+      case "random":
+        return ja ? `ランダムな星へ ${d} 減光。` : `${d} light loss to a random star.`;
+      case "choose":
+        return ja ? `選んだ星へ ${d} 減光（レア）。` : `${d} light loss to a chosen star (rare).`;
+      default:
+        return ja ? `次の軌道の星へ ${d} 減光。` : `${d} light loss to the next star.`;
     }
-    return lang === "ja"
-      ? `${card.damage} ダメージを与える。`
-      : `Deal ${card.damage} damage.`;
   }
   if (card.kind === "defense" && card.defense) {
     return DEFENSE_TEXT[card.defense]?.[lang] ?? card.description;

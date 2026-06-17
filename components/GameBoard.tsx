@@ -11,16 +11,10 @@ import { useLangStore, useT } from "@/store/i18n";
 import { localizeCardName } from "@/lib/i18n";
 import type { Card } from "@/lib/types";
 
+// Only rare free-pick flares need a chosen target; everything else is
+// flow-based (the reducer resolves next/prev/random/all) or self/global.
 function needsTarget(card: Card): boolean {
-  if (card.kind === "attack") return true;
-  if (card.kind === "special") {
-    return (
-      card.special === "skip_turn" ||
-      card.special === "limit_defense" ||
-      card.special === "slip_damage"
-    );
-  }
-  return false;
+  return card.kind === "attack" && card.attackTarget === "choose";
 }
 
 export function GameBoard() {
@@ -47,24 +41,31 @@ export function GameBoard() {
 
   const opponents = roomState.players.filter((p) => p.id !== myId);
 
-  // Defense options when responding to an attack.
+  // Shields we may answer an incoming flare with: block/reflect need a valid
+  // color (or it's a supernova), pass works on anything.
   const defenseOptions = useMemo(() => {
     if (!amDefending || !pending || !me) return [];
     if (!canUseDefense(me)) return [];
     return hand.filter(
-      (c) => c.kind === "defense" && (pending.card.fatal || canDefend(pending.card, c)),
+      (c) =>
+        c.kind === "defense" &&
+        (c.defense === "pass" || pending.card.fatal || canDefend(pending.card, c)),
     );
   }, [amDefending, pending, me, hand]);
 
   function playCard(targetId?: string) {
     if (!selectedCard) return;
     if (selectedCard.kind === "attack") {
-      if (!targetId) return;
-      sendGameAction({ type: "play_attack", cardId: selectedCard.id, targetId });
+      if (needsTarget(selectedCard)) {
+        if (!targetId) return;
+        sendGameAction({ type: "play_attack", cardId: selectedCard.id, targetId });
+      } else {
+        sendGameAction({ type: "play_attack", cardId: selectedCard.id });
+      }
     } else if (selectedCard.special === "heal") {
       sendGameAction({ type: "play_heal", cardId: selectedCard.id });
     } else {
-      sendGameAction({ type: "play_special", cardId: selectedCard.id, targetId });
+      sendGameAction({ type: "play_special", cardId: selectedCard.id });
     }
     setSelectedCardId(null);
   }
@@ -91,6 +92,12 @@ export function GameBoard() {
           </div>
         </div>
         <div className="text-right text-xs text-slate-400">
+          <div>
+            {t("game.orbit")}{" "}
+            <span className="font-bold text-neon-cyan">
+              {roomState.direction === 1 ? "↻" : "↺"}
+            </span>
+          </div>
           {t("game.room")} <span className="font-bold text-neon-gold">{roomState.code}</span>
         </div>
       </div>

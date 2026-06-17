@@ -5,14 +5,26 @@ export type CardKind = "attack" | "defense" | "special";
 
 export type DefenseEffect =
   | "block" // fully cut all incoming damage
-  | "reflect"; // fully cut, and reflect the damage back to the attacker
+  | "reflect" // fully cut, and reflect the damage back to the attacker
+  | "pass"; // don't take it — shove the attack onto the next player
 
 export type SpecialEffect =
   | "heal" // heal self
   | "shuffle_hands" // shuffle and redistribute every player's hand
-  | "skip_turn" // chance to skip target's next action
-  | "limit_defense" // target cannot use defense cards for 3 of their turns
-  | "slip_damage"; // damage applied over the target's next 3 turns
+  | "skip_turn" // chance to skip the NEXT player's action (UNO Skip)
+  | "reverse" // flip the turn-order direction (UNO Reverse)
+  | "slip_damage"; // damage over the next player's next 3 turns
+
+/**
+ * Where an attack lands. Most attacks are flow-based (turn-order relative) so
+ * nobody gets freely focus-fired; "choose" is reserved for rare cards.
+ */
+export type AttackTarget =
+  | "next" // the next player in turn order
+  | "prev" // the previous player (counter-flow)
+  | "random" // a random opponent
+  | "all" // everyone else, small damage (AOE)
+  | "choose"; // free pick — rare cards only
 
 export interface Card {
   /** Unique per-instance id. */
@@ -25,6 +37,10 @@ export interface Card {
   // attack
   damage?: number;
   fatal?: boolean;
+  /** How the attack picks its target. Defaults to "next". */
+  attackTarget?: AttackTarget;
+  /** If true, an undefended hit continues to the next player. */
+  chain?: boolean;
   // defense
   defense?: DefenseEffect;
   // special
@@ -64,6 +80,8 @@ export interface PendingAttack {
   attackerId: string;
   targetId: string;
   card: Card;
+  /** Number of times this attack has been forwarded (pass/chain), for loop guarding. */
+  hops?: number;
 }
 
 export interface GameEvent {
@@ -97,6 +115,8 @@ export interface RoomState {
   /** Ordered list of player ids defining turn order. */
   turnOrder: string[];
   currentTurnIndex: number;
+  /** Turn-order direction: +1 forward, -1 reversed (UNO Reverse). */
+  direction: 1 | -1;
   /** Per-player hand of cards (keyed by player id). */
   hands: Record<string, Card[]>;
   pending: PendingAttack | null;
@@ -108,8 +128,8 @@ export interface RoomState {
 
 /** Actions a client can request from the host-authoritative reducer. */
 export type GameAction =
-  | { type: "play_attack"; cardId: string; targetId: string }
+  | { type: "play_attack"; cardId: string; targetId?: string } // targetId only for "choose" cards
   | { type: "play_heal"; cardId: string }
-  | { type: "play_special"; cardId: string; targetId?: string }
+  | { type: "play_special"; cardId: string }
   | { type: "pass" }
   | { type: "defend"; cardId: string | null };

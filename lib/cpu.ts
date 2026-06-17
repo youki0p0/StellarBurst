@@ -1,5 +1,5 @@
 import { canDefend, canUseDefense } from "./rules";
-import type { Card, GameAction, Player, RoomState } from "./types";
+import type { GameAction, Player, RoomState } from "./types";
 
 function alive(state: RoomState): Player[] {
   return state.players.filter((p) => p.alive && p.hp > 0);
@@ -7,7 +7,8 @@ function alive(state: RoomState): Player[] {
 
 /**
  * Decide a CPU player's action. Strength comes mostly from draw luck, not deep
- * AI: attack the weakest rival, heal when hurting, occasionally use a special.
+ * AI. Targets are flow-based (the reducer resolves next/prev/random/all), so
+ * the CPU only picks a target for rare free-pick ("choose") flares.
  */
 export function chooseCpuAction(state: RoomState, playerId: string): GameAction {
   const me = state.players.find((p) => p.id === playerId);
@@ -19,67 +20,58 @@ export function chooseCpuAction(state: RoomState, playerId: string): GameAction 
   const healCard = specials.find((c) => c.special === "heal");
   const opponents = alive(state).filter((p) => p.id !== playerId);
 
-  // Heal when low and a heal is available.
-  if (me.hp <= 35 && healCard) {
-    return { type: "play_heal", cardId: healCard.id };
+  // Rekindle when dim.
+  if (me.hp <= 35 && healCard) return { type: "play_heal", cardId: healCard.id };
+
+  // Occasionally throw a flow special for chaos.
+  const flowSpecials = specials.filter((c) => c.special !== "heal");
+  if (flowSpecials.length > 0 && Math.random() < 0.35) {
+    return { type: "play_special", cardId: pick(flowSpecials).id };
   }
 
-  // Occasionally fire off a targeted special (~30% of the time when held).
-  const targetedSpecials = specials.filter(
-    (c) =>
-      c.special === "skip_turn" ||
-      c.special === "limit_defense" ||
-      c.special === "slip_damage",
-  );
-  if (opponents.length > 0 && targetedSpecials.length > 0 && Math.random() < 0.3) {
-    const card = pick(targetedSpecials);
-    const target = weakest(opponents);
-    return { type: "play_special", cardId: card.id, targetId: target.id };
-  }
-
-  // Otherwise attack the weakest opponent. Prefer fatal cards a bit.
+  // Otherwise flare. Prefer a fatal sometimes; only "choose" needs a target.
   if (attacks.length > 0 && opponents.length > 0) {
     const fatal = attacks.find((c) => c.fatal);
-    const card = fatal && Math.random() < 0.7 ? fatal : strongest(attacks);
-    const target = weakest(opponents);
-    return { type: "play_attack", cardId: card.id, targetId: target.id };
+    const card = fatal && Math.random() < 0.6 ? fatal : pick(attacks);
+    if (card.attackTarget === "choose") {
+      return { type: "play_attack", cardId: card.id, targetId: weakest(opponents).id };
+    }
+    return { type: "play_attack", cardId: card.id };
   }
 
-  // Non-targeted special (e.g. shuffle) as a fallback.
-  const shuffle = specials.find((c) => c.special === "shuffle_hands");
-  if (shuffle && Math.random() < 0.5) {
-    return { type: "play_special", cardId: shuffle.id };
-  }
-
-  // Late fallback: heal even if not low, else pass.
-  if (healCard && me.hp < me.maxHp) {
-    return { type: "play_heal", cardId: healCard.id };
-  }
+  if (specials.length > 0) return { type: "play_special", cardId: pick(specials).id };
+  if (healCard && me.hp < me.maxHp) return { type: "play_heal", cardId: healCard.id };
   return { type: "pass" };
 }
 
-/** Decide which defense card (if any) a CPU uses against a pending attack. */
+/** Decide which defense card (if any) a CPU uses against a pending flare. */
 export function chooseCpuDefense(state: RoomState, playerId: string): string | null {
   const me = state.players.find((p) => p.id === playerId);
   const hand = state.hands[playerId] ?? [];
   const attack = state.pending?.card;
   if (!me || !attack || !canUseDefense(me)) return null;
 
-  const usable = hand.filter(
-    (c) => c.kind === "defense" && (attack.fatal || canDefend(attack, c)),
-  );
-  if (usable.length === 0) return null;
+  const colorOk = (c: { defense?: string; color?: string }) =>
+    attack.fatal || canDefend(attack, c as never);
+  const defs = hand.filter((c) => c.kind === "defense");
+  const blocks = defs.filter((c) => c.defense === "block" && colorOk(c));
+  const reflects = defs.filter((c) => c.defense === "reflect" && colorOk(c));
+  const passes = defs.filter((c) => c.defense === "pass");
 
-  // Against a fatal blow, spend a plain block if possible (save reflects).
+  // Supernova (fatal): survive somehow — block, or shove it on, or reflect.
   if (attack.fatal) {
-    const block = usable.find((c) => c.defense === "block") ?? usable[0];
-    return block.id;
+    return (blocks[0] ?? passes[0] ?? reflects[0])?.id ?? null;
   }
 
-  // For small hits, don't bother burning a card; otherwise prefer reflect.
   const incoming = attack.damage ?? 0;
-  if (incoming <= 12 && Math.random() < 0.5) return null;
-  return bestDefense(usable).id;
+  if (incoming <= 10 && Math.random() < 0.5) return null; // shrug off a glancing flare
+
+  if (reflects.length && Math.random() < 0.6) return reflects[0].id; // bounce it back
+  if (passes.length && Math.random() < 0.5) return passes[0].id; // shove it onward
+  if (blocks.length) return blocks[0].id;
+  if (reflects.length) return reflects[0].id;
+  if (passes.length) return passes[0].id;
+  return null;
 }
 
 function pick<T>(arr: T[]): T {
@@ -88,18 +80,4 @@ function pick<T>(arr: T[]): T {
 
 function weakest(players: Player[]): Player {
   return players.reduce((a, b) => (b.hp < a.hp ? b : a));
-}
-
-function strongest(attacks: Card[]): Card {
-  return attacks.reduce((a, b) => ((b.damage ?? 0) > (a.damage ?? 0) ? b : a));
-}
-
-function bestDefense(cards: Card[]): Card {
-  const rank: Record<string, number> = {
-    reflect: 2, // reflect also deals damage back, so prefer it
-    block: 1,
-  };
-  return cards.reduce((a, b) =>
-    (rank[b.defense ?? ""] ?? 0) > (rank[a.defense ?? ""] ?? 0) ? b : a,
-  );
 }

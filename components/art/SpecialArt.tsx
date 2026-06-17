@@ -35,183 +35,190 @@ function Pixels({
 }
 
 // ---------------------------------------------------------------------------
-// POTION (heal) — round flask with green liquid, neck cork, glass shine,
-// and a sparkle by the rim.
-// O outline · G glass · L liquid · H shine · k cork · s sparkle
+// CORE REKINDLE (heal) — a star core re-igniting: white-hot center, gold
+// flame body, with a green life-spark and rising embers.
+// O outline · W white core · C bright gold · F gold flame · g green spark
 // ---------------------------------------------------------------------------
-const POTION_PALETTE: Record<string, string> = {
+const REKINDLE_PALETTE: Record<string, string> = {
   O: OUTLINE,
-  G: "#86efac",
-  L: "#22c55e",
-  H: "#f8fafc",
-  k: "#b45309",
-  s: "#fde68a",
+  W: "#ffffff",
+  C: "#fde68a",
+  F: "#fbbf24",
+  g: "#4ade80",
 };
-const POTION_GRID = [
-  ".............s..",
-  ".....OOO....sss.",
-  ".....OkO....ss..",
-  ".....OkO........",
-  "....OOkOO.......",
-  "....OGGGO.......",
-  "...OGHGGGO......",
-  "..OGHGGGGGO.....",
-  "..OGHLLLLLO.....",
-  ".OGHLLLLLLLO....",
-  ".OGLLLLLLLLO....",
-  ".OGLLLLLLLLO....",
-  ".OGLLLLLLLLO....",
-  "..OGLLLLLLO.....",
-  "..OOGGGGGOO.....",
-  "....OOOOO.......",
+const REKINDLE_GRID = [
+  ".......O........",
+  ".....g.O.g......",
+  "......OFO.......",
+  ".......F....g...",
+  "...O..OFO..O....",
+  "..OFO.OCO.OFO...",
+  "...OFOOCOOFO....",
+  "....OFCCWCFO....",
+  "...OFCWWWCCFO...",
+  "...OFCWWWWCFO...",
+  "....OCCWWCCO....",
+  "....OFCCCCFO....",
+  ".....OFCCFO.....",
+  "..g...OFFO...g..",
+  ".......OO.......",
+  "................",
 ];
 
 // ---------------------------------------------------------------------------
-// SHUFFLE (shuffle_hands) — two crossing curved arrows, one purple
-// pointing right, one cyan pointing left.
-// O outline · P purple · C cyan
+// NEBULA SHUFFLE (shuffle_hands) — a swirling nebula cloud with purple,
+// cyan, and pink wisps spiraling around a bright core, dotted with stars.
+// O outline · P purple · C cyan · K pink · W star
 // ---------------------------------------------------------------------------
-const SHUFFLE_PALETTE: Record<string, string> = {
+const NEBULA_PALETTE: Record<string, string> = {
   O: OUTLINE,
   P: "#a855f7",
   C: "#22d3ee",
+  K: "#ec4899",
+  W: "#ffffff",
 };
-const SHUFFLE_GRID = [
-  "................",
-  "..OOOOOOOO......",
-  ".OPPPPPPPPO.....",
-  "OPPPPPPPPPPO..O.",
-  ".OOOOOOOOPPOOOO.",
-  ".......OOPPPPPO.",
-  "........OPPPPO..",
-  ".........OOOO...",
-  "...OOOO.........",
-  "..OCCCCOO.......",
-  ".OCCCCCOOOOOOOO.",
-  "OCCCCCCCCCCCCCCO",
-  ".OCCOOOOOOOOOOO.",
-  "..OCCCCO........",
-  "...OOOO.........",
+const NEBULA_GRID = [
+  "....OOOO...W....",
+  "...OPPPPOO......",
+  "..OPPCCCPPO.W...",
+  ".OPPCCCCCKPO....",
+  ".OPCCWCCKKKO....",
+  "OPCCWCCKKKKPO...",
+  "OPCCCCKKWKKPO.W.",
+  "OPPCCCKKKKKPO...",
+  ".OPPCCKKKKPO....",
+  "W.OPPPKKKPO.....",
+  "...OOPPPOO...W..",
+  ".....OOO........",
+  "..W.......W.....",
+  "...........W....",
+  ".....W..........",
   "................",
 ];
 
 // ---------------------------------------------------------------------------
-// HOURGLASS (skip_turn) — gold frame, pink sand pooled in the lower bulb
-// with a falling stream through the pinch.
-// O outline · F gold frame · S pink sand · g glass
+// ECLIPSE (skip_turn) — a dark disc eclipsing a star, surrounded by a
+// bright gold corona ring with flares streaming outward.
+// O outline · F gold corona · C bright corona · D dark disc · h disc shade
 // ---------------------------------------------------------------------------
-const HOURGLASS_PALETTE: Record<string, string> = {
+const ECLIPSE_PALETTE: Record<string, string> = {
   O: OUTLINE,
   F: "#fbbf24",
-  S: "#ec4899",
-  g: "#bae6fd",
+  C: "#fde68a",
+  D: "#0a0612",
+  h: "#1e1b2e",
 };
-const HOURGLASS_GRID = [
-  "..OOOOOOOOOO....",
-  "..OFFFFFFFFO....",
-  "...OgggggggO....",
-  "...OgSSSSSgO....",
-  "....OgSSSgO.....",
-  ".....OgSgO......",
-  "......OSO.......",
-  ".......O.......",
-  "......OSO.......",
-  ".....OgSgO......",
-  "....OgSSSgO.....",
-  "...OgSSSSSgO....",
-  "...OSSSSSSSO....",
-  "..OFFFFFFFFO....",
-  "..OOOOOOOOOO....",
+const ECLIPSE_GRID = [
+  ".......C........",
+  "...C...F...C....",
+  "....F.OCO.F.....",
+  "....OOCCCOO.....",
+  "...OCCFFFCCO....",
+  "..OCFODDDOFCO...",
+  ".COFODhhhDOFOC..",
+  "C.FODhhhhhDOF.C.",
+  ".COFODhhhDOFOC..",
+  "..OCFODDDOFCO...",
+  "...OCCFFFCCO....",
+  "....OOCCCOO.....",
+  "....F.OCO.F.....",
+  "...C...F...C....",
+  ".......C........",
   "................",
 ];
 
 // ---------------------------------------------------------------------------
-// CRACKED SHIELD (limit_defense) — steel shield with a jagged red crack
-// running down its face.
-// O outline · S steel · H highlight · C crack (red)
+// RETROGRADE ORBIT (reverse) — two curved arrows forming a counter-rotating
+// orbit loop, cyan sweeping one way and purple the other, around a core.
+// O outline · C cyan arrow · P purple arrow · W core star
 // ---------------------------------------------------------------------------
-const SHIELD_PALETTE: Record<string, string> = {
+const RETROGRADE_PALETTE: Record<string, string> = {
   O: OUTLINE,
-  S: "#64748b",
-  H: "#94a3b8",
-  C: "#ef4444",
+  C: "#22d3ee",
+  P: "#a855f7",
+  W: "#ffffff",
 };
-const SHIELD_GRID = [
-  "...OOOOOOOO.....",
-  "..OHHSSSSCSO....",
-  ".OHHSSSSCCSSO...",
-  ".OHSSSSCSSSSO...",
-  ".OHSSSCSSSSSO...",
-  ".OHSSSCSSSSSO...",
-  ".OHSSSSCSSSSO...",
-  ".OHSSSSCSSSSO...",
-  ".OHSSSSSCSSSO...",
-  "..OHSSSSCSSO....",
-  "..OHSSSCSSSO....",
-  "...OHSSCSSO.....",
-  "....OHSCSO.....",
-  ".....OHCO......",
-  "......OO.......",
+const RETROGRADE_GRID = [
+  "....OOOOO.......",
+  "...OCCCCCOO.....",
+  "..OCCOOOOCCO....",
+  ".OCCO....OCCO...",
+  ".OCO..O...OCO.O.",
+  "OCO..OCO..OCOOO.",
+  "OCO.OCCCO.OCCCO.",
+  "OCO..OCO........",
+  ".OPO..O....OPO..",
+  ".OPPPO.OCO.OPO..",
+  "..OPPPOOPO.OPO..",
+  "...OPPO.OPOOPO.O",
+  "....OOO..OPPPO.O",
+  ".........OPPO.O.",
+  "..........OOOO..",
   "................",
 ];
 
 // ---------------------------------------------------------------------------
-// POISON (slip_damage) — toxic green droplet with a bright highlight,
-// dripping a small falling bead beneath.
-// O outline · D drop · L lighter drop · H highlight
+// METEOR DECAY (slip_damage) — small descending meteor bits trailing toxic
+// green debris, falling diagonally across the frame.
+// O outline · H hot head · T trail · t faint trail
 // ---------------------------------------------------------------------------
-const POISON_PALETTE: Record<string, string> = {
+const METEOR_PALETTE: Record<string, string> = {
   O: OUTLINE,
-  D: "#22c55e",
-  L: "#4ade80",
   H: "#bbf7d0",
+  T: "#4ade80",
+  t: "#22c55e",
 };
-const POISON_GRID = [
-  ".......O........",
-  ".......O........",
-  "......OLO.......",
-  "......OLO.......",
-  ".....OHLDO......",
-  ".....OHLDO......",
-  "....OHLLDDO.....",
-  "...OHLLDDDDO....",
-  "..OHLLDDDDDDO...",
-  "..OHLDDDDDDDO...",
-  "..ODDDDDDDDDO...",
-  "...ODDDDDDDO....",
-  "....OODDDOO.....",
-  "......OOO.......",
-  "........O.......",
-  "......OLDO......",
+const METEOR_GRID = [
+  ".t..............",
+  "Ot.....t........",
+  "OTt...OTt.......",
+  ".OTt...OTt......",
+  "..OHO...OTt.....",
+  "...O.....OHO....",
+  ".........O......",
+  "...t............",
+  "..OTt......t....",
+  ".OTHO.....OTt...",
+  "..OO.......OTt..",
+  "............OHO.",
+  ".....t......OO..",
+  "....OTt.........",
+  "...OTHO.....t...",
+  "....OO.....OHO..",
 ];
 
 // ---------------------------------------------------------------------------
-// SPARKLE (fallback) — four-point star burst with a warm glowing core.
-// O outline · S star body · C bright core
+// STARBURST (fallback) — four-point star sparkle with a warm glowing core
+// and small accent twinkles in the corners.
+// O outline · S star body · C bright core · t twinkle
 // ---------------------------------------------------------------------------
-const SPARKLE_PALETTE: Record<string, string> = {
+const STARBURST_PALETTE: Record<string, string> = {
   O: OUTLINE,
   S: "#fde68a",
   C: "#fef9c3",
+  t: "#fde68a",
 };
-const SPARKLE_GRID = [
-  ".......O........",
-  ".......OO.......",
-  "......OSSO......",
-  "......OSSO......",
+const STARBURST_GRID = [
+  ".......O.....t..",
+  ".......OO..tOt..",
+  "......OSO...t...",
+  "......OSO.......",
   ".O...OSSSO...O..",
-  "..OOOSSSSSSOO...",
-  "...OSSSCCSSO....",
-  "..OSSCCCCSSO....",
-  "..OSSCCCCSSO....",
-  "...OSSSCCSSO....",
-  "..OOOSSSSSSOO...",
+  "..OOOSSSSSOO...O",
+  "...OSSCCCSSO....",
+  ".OOSSCCWCCSSOO..",
+  "...OSSCCCSSO....",
+  "..OOOSSSSSOO....",
   ".O...OSSSO...O..",
-  "......OSSO......",
-  "......OSSO......",
-  ".......OO.......",
-  ".......O........",
+  "......OSO.......",
+  "..t...OSO.......",
+  ".tOt..OO........",
+  "..t....O........",
+  "................",
 ];
+
+// White-core variant key for STARBURST uses 'W'; add to palette.
+STARBURST_PALETTE.W = "#ffffff";
 
 function spriteFor(card: Card): {
   grid: string[];
@@ -219,17 +226,17 @@ function spriteFor(card: Card): {
 } {
   switch (card.special) {
     case "heal":
-      return { grid: POTION_GRID, palette: POTION_PALETTE };
+      return { grid: REKINDLE_GRID, palette: REKINDLE_PALETTE };
     case "shuffle_hands":
-      return { grid: SHUFFLE_GRID, palette: SHUFFLE_PALETTE };
+      return { grid: NEBULA_GRID, palette: NEBULA_PALETTE };
     case "skip_turn":
-      return { grid: HOURGLASS_GRID, palette: HOURGLASS_PALETTE };
-    case "limit_defense":
-      return { grid: SHIELD_GRID, palette: SHIELD_PALETTE };
+      return { grid: ECLIPSE_GRID, palette: ECLIPSE_PALETTE };
+    case "reverse":
+      return { grid: RETROGRADE_GRID, palette: RETROGRADE_PALETTE };
     case "slip_damage":
-      return { grid: POISON_GRID, palette: POISON_PALETTE };
+      return { grid: METEOR_GRID, palette: METEOR_PALETTE };
     default:
-      return { grid: SPARKLE_GRID, palette: SPARKLE_PALETTE };
+      return { grid: STARBURST_GRID, palette: STARBURST_PALETTE };
   }
 }
 
