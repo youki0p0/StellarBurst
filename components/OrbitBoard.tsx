@@ -12,6 +12,7 @@ export interface OrbitBoardProps {
   selfClientId: string; // mark the local player's star with "(you)"
   selectableIds?: string[]; // ids that can be clicked (choose-target mode)
   selectedId?: string | null;
+  finishingId?: string | null; // star currently being finished (STELLA target)
   onSelect?: (id: string) => void;
   flash?: { id: string; kind: "hit" | "reflect" | "heal" | "super" } | null;
 }
@@ -31,6 +32,7 @@ export function OrbitBoard(props: OrbitBoardProps) {
     selfClientId,
     selectableIds = [],
     selectedId = null,
+    finishingId = null,
     onSelect,
     flash = null,
   } = props;
@@ -88,6 +90,9 @@ export function OrbitBoard(props: OrbitBoardProps) {
           dead ? "border-board-700 opacity-40 grayscale" : "border-board-600",
           isTurn ? "ring-2 ring-neon-cyan shadow-neon animate-pulse" : "",
           isSelected ? "ring-2 ring-neon-gold" : "",
+          p.id === finishingId && !dead
+            ? "ring-2 ring-neon-pink shadow-[0_0_16px_3px_rgba(236,72,153,0.75)] animate-pulse"
+            : "",
           burst && !dead ? "shadow-[0_0_14px_2px_rgba(250,204,21,0.6)]" : "",
           isSelectable && !isSelected ? "hover:ring-2 hover:ring-neon-gold cursor-pointer" : "",
           isFlashing ? `animate-pop ${FLASH_STYLE[flash.kind]}` : "",
@@ -149,6 +154,11 @@ export function OrbitBoard(props: OrbitBoardProps) {
               {p.isHost && (
                 <span className="rounded bg-neon-gold/20 px-1 text-[0.55rem] text-neon-gold">
                   {t("common.host")}
+                </span>
+              )}
+              {!dead && p.effects.guard > 0 && (
+                <span className="rounded bg-card-green/20 px-1 text-[0.55rem] text-card-green">
+                  ⛨{p.effects.guard}
                 </span>
               )}
             </div>

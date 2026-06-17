@@ -100,6 +100,7 @@ function normalizeEffects(e: Partial<PlayerEffects> | null): PlayerEffects {
     skipNextTurn: e?.skipNextTurn ?? false,
     defenseLimitedTurns: e?.defenseLimitedTurns ?? 0,
     slip: e?.slip ?? null,
+    guard: e?.guard ?? 0,
   };
 }
 

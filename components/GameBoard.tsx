@@ -42,10 +42,22 @@ function effectFor(
     case "log.skipOk":
     case "log.skipped":
       return { sfx: "eclipse" };
-    case "log.stella":
-      return { sfx: "stella" };
-    case "log.calledOut":
-      return { sfx: "callout", flash: target ? { id: target, kind: "hit" } : undefined };
+    case "log.stellaDeclare":
+      return { sfx: "stella", flash: target ? { id: target, kind: "super" } : undefined };
+    case "log.stellaEscape":
+      return { sfx: "stella", flash: e.actorId ? { id: e.actorId, kind: "reflect" } : undefined };
+    case "log.pointOut":
+    case "log.pointHit":
+      return { sfx: "callout" };
+    case "log.mispoint":
+    case "log.stellaFail":
+      return { sfx: "callout", flash: e.actorId ? { id: e.actorId, kind: "hit" } : undefined };
+    case "log.guardHold":
+      return { sfx: "reflect", flash: e.actorId ? { id: e.actorId, kind: "reflect" } : undefined };
+    case "log.buffHeal":
+    case "log.buffShield":
+    case "log.buffCard":
+      return { sfx: "heal", flash: e.actorId ? { id: e.actorId, kind: "heal" } : undefined };
     case "log.eliminate":
       return { sfx: "darken" };
     default:
@@ -66,6 +78,8 @@ export function GameBoard() {
   const identity = useGameStore((s) => s.identity);
   const sendGameAction = useGameStore((s) => s.sendGameAction);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [declareStella, setDeclareStella] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const [flash, setFlash] = useState<
     { id: string; kind: "hit" | "reflect" | "heal" | "super" } | null
   >(null);
@@ -112,16 +126,38 @@ export function GameBoard() {
 
   const selectedCard = hand.find((c) => c.id === selectedCardId) ?? null;
   const targetingMode = Boolean(selectedCard && needsTarget(selectedCard) && isMyTurn);
+  // STELLA can only be declared on a single-target flare (not AOE).
+  const canDeclareStella = Boolean(
+    selectedCard && selectedCard.kind === "attack" && selectedCard.attackTarget !== "all",
+  );
+  const willDeclareStella = canDeclareStella && declareStella;
 
   const opponents = roomState.players.filter((p) => p.id !== myId);
 
-  // STELLA Call window.
+  // --- STELLA finishing window ---
   const stella = roomState.stella;
-  const iOweStella = Boolean(stella && stella.playerId === myId && me?.alive);
-  const stellaPlayer = stella ? roomState.players.find((p) => p.id === stella.playerId) : null;
-  const canCallOut = Boolean(
-    stella && me?.alive && stella.playerId !== myId && stellaPlayer,
+  const inStella = roomState.phase === "stella" && Boolean(stella) && Boolean(pending);
+  const iAmFinisher = Boolean(inStella && stella && stella.attackerId === myId);
+  const iAmFinished = Boolean(inStella && stella && stella.targetId === myId && me?.alive);
+  const iPointed = Boolean(inStella && stella && myId && stella.pointedBy.includes(myId));
+  const iCanPoint = Boolean(
+    inStella && stella && me?.alive && myId !== stella.attackerId && myId !== stella.targetId && !iPointed,
   );
+  const finishTarget = stella ? roomState.players.find((p) => p.id === stella.targetId) : null;
+  const secsLeft = stella ? Math.max(0, Math.ceil((stella.deadline - now) / 1000)) : 0;
+
+  // Tick a clock while a STELLA window is open (drives the countdown).
+  useEffect(() => {
+    if (!inStella) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [inStella]);
+
+  // Drop a stale STELLA toggle whenever the selection can't carry it.
+  useEffect(() => {
+    if (!canDeclareStella && declareStella) setDeclareStella(false);
+  }, [canDeclareStella, declareStella]);
 
   // Shields we may answer an incoming flare with: block/reflect need a valid
   // color (or it's a supernova), pass works on anything.
@@ -135,14 +171,26 @@ export function GameBoard() {
     );
   }, [amDefending, pending, me, hand]);
 
+  // During a finish, pass-forwarding is disabled — only block/reflect cards help.
+  const stellaShields = useMemo(() => {
+    if (!iAmFinished || !pending || !me || !canUseDefense(me)) return [];
+    return hand.filter(
+      (c) =>
+        c.kind === "defense" &&
+        c.defense !== "pass" &&
+        (pending.card.fatal || canDefend(pending.card, c)),
+    );
+  }, [iAmFinished, pending, me, hand]);
+
   function playCard(targetId?: string) {
     if (!selectedCard) return;
     if (selectedCard.kind === "attack") {
+      const stellaFlag = canDeclareStella && declareStella;
       if (needsTarget(selectedCard)) {
         if (!targetId) return;
-        sendGameAction({ type: "play_attack", cardId: selectedCard.id, targetId });
+        sendGameAction({ type: "play_attack", cardId: selectedCard.id, targetId, stella: stellaFlag });
       } else {
-        sendGameAction({ type: "play_attack", cardId: selectedCard.id });
+        sendGameAction({ type: "play_attack", cardId: selectedCard.id, stella: stellaFlag });
       }
     } else if (selectedCard.special === "heal") {
       sendGameAction({ type: "play_heal", cardId: selectedCard.id });
@@ -150,14 +198,12 @@ export function GameBoard() {
       sendGameAction({ type: "play_special", cardId: selectedCard.id });
     }
     setSelectedCardId(null);
+    setDeclareStella(false);
   }
 
   function handleCardTap(card: Card) {
     if (!isMyTurn) return;
     setSelectedCardId((cur) => (cur === card.id ? null : card.id));
-    if (card.kind === "special" && !needsTarget(card)) {
-      // Non-targeted special (heal / shuffle) — confirm via the action bar.
-    }
   }
 
   return (
@@ -187,24 +233,62 @@ export function GameBoard() {
         </div>
       </div>
 
-      {/* STELLA Call window */}
-      {iOweStella && (
-        <button
-          onClick={() => sendGameAction({ type: "stella_call" })}
-          className="btn-primary w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-4 text-xl font-black tracking-widest"
-        >
-          {t("stella.declare")}
-          <span className="ml-2 text-sm font-normal opacity-80">— {t("stella.prompt")}</span>
-        </button>
-      )}
-      {!iOweStella && canCallOut && stellaPlayer && (
-        <button
-          onClick={() => sendGameAction({ type: "call_out", targetId: stellaPlayer.id })}
-          className="btn-secondary w-full border-neon-pink/70 text-neon-pink"
-        >
-          {t("stella.callout")}{" "}
-          <span className="text-xs opacity-70">({t("stella.calloutOf", { name: stellaPlayer.name })})</span>
-        </button>
+      {/* STELLA finishing window */}
+      {inStella && stella && finishTarget && (
+        <div className="panel animate-pop border-neon-gold/70 bg-gradient-to-r from-neon-gold/10 to-neon-pink/10 p-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-black tracking-widest text-neon-gold">
+              🌟 {t("stella.windowTitle")}
+            </div>
+            <div className="text-lg font-black tabular-nums text-neon-pink">{secsLeft}</div>
+          </div>
+
+          {iAmFinished ? (
+            <>
+              <p className="mt-1 text-sm font-bold text-neon-pink">{t("stella.youAreTarget")}</p>
+              <button
+                onClick={() => sendGameAction({ type: "call_out" })}
+                className="btn-primary mt-2 w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-3 text-lg font-black"
+              >
+                {t("stella.escapeBtn")}
+              </button>
+              {stellaShields.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {stellaShields.map((c) => (
+                    <CardView
+                      key={c.id}
+                      card={c}
+                      compact
+                      onClick={() => sendGameAction({ type: "defend", cardId: c.id })}
+                    />
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => sendGameAction({ type: "defend", cardId: null })}
+                className="btn-secondary mt-2 w-full"
+              >
+                {t("game.takeHit")}
+              </button>
+            </>
+          ) : iAmFinisher ? (
+            <p className="mt-1 text-sm text-slate-300">{t("stella.attackerWait")}</p>
+          ) : iCanPoint ? (
+            <>
+              <button
+                onClick={() => sendGameAction({ type: "call_out" })}
+                className="btn-secondary mt-2 w-full border-neon-pink/70 text-neon-pink"
+              >
+                {t("stella.pointOutBtn")}
+              </button>
+              <p className="mt-1 text-center text-xs text-slate-400">{t("stella.bystanderHint")}</p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-slate-400">
+              {iPointed ? t("stella.pointedAlready") : t("stella.attackerWait")}
+            </p>
+          )}
+        </div>
       )}
 
       {/* Orbit board: stars on the ring */}
@@ -219,6 +303,7 @@ export function GameBoard() {
             : []
         }
         selectedId={null}
+        finishingId={inStella && stella ? stella.targetId : null}
         onSelect={(id) => playCard(id)}
         flash={flash}
       />
@@ -275,11 +360,28 @@ export function GameBoard() {
           ))}
         </div>
 
+        {isMyTurn && canDeclareStella && (
+          <button
+            onClick={() => setDeclareStella((v) => !v)}
+            aria-pressed={declareStella}
+            className={[
+              "mb-2 w-full rounded-lg border px-3 py-2 text-sm font-bold tracking-wide transition",
+              declareStella
+                ? "border-neon-gold bg-neon-gold/15 text-neon-gold shadow-neon"
+                : "border-board-600 text-slate-300",
+            ].join(" ")}
+          >
+            🌟 {t("stella.toggle")} · {declareStella ? "ON" : "OFF"}
+          </button>
+        )}
+
         {isMyTurn && (
           <div className="flex gap-2">
             {selectedCard && !needsTarget(selectedCard) && (
               <button onClick={() => playCard()} className="btn-primary flex-1">
-                {t("game.play")} {localizeCardName(selectedCard, lang)}
+                {willDeclareStella
+                  ? t("stella.declareBtn")
+                  : `${t("game.play")} ${localizeCardName(selectedCard, lang)}`}
               </button>
             )}
             {selectedCard && (

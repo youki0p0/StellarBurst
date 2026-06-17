@@ -1,3 +1,4 @@
+import { attackTargetId } from "./room";
 import { canDefend, canUseDefense } from "./rules";
 import type { GameAction, Player, RoomState } from "./types";
 
@@ -33,10 +34,17 @@ export function chooseCpuAction(state: RoomState, playerId: string): GameAction 
   if (attacks.length > 0 && opponents.length > 0) {
     const fatal = attacks.find((c) => c.fatal);
     const card = fatal && Math.random() < 0.6 ? fatal : pick(attacks);
-    if (card.attackTarget === "choose") {
-      return { type: "play_attack", cardId: card.id, targetId: weakest(opponents).id };
+    const chosen = card.attackTarget === "choose" ? weakest(opponents).id : undefined;
+    // Declare a STELLA finish when the resolved target would actually darken
+    // (the bot "calls its shot"), but not every time.
+    let stella = false;
+    if (card.attackTarget !== "all") {
+      const tid = attackTargetId(state, playerId, card, chosen);
+      const tgt = tid ? state.players.find((p) => p.id === tid) : null;
+      const lethal = card.fatal === true || (tgt ? (card.damage ?? 0) >= tgt.hp : false);
+      stella = lethal && Math.random() < 0.6;
     }
-    return { type: "play_attack", cardId: card.id };
+    return { type: "play_attack", cardId: card.id, targetId: chosen, stella };
   }
 
   if (specials.length > 0) return { type: "play_special", cardId: pick(specials).id };
