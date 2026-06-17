@@ -169,6 +169,83 @@ describe("flow-based targeting", () => {
   });
 });
 
+describe("STELLA finishing call", () => {
+  function chooseAtk(id: string, dmg: number): Card {
+    return { id, kind: "attack", color: "colorless", name: "", description: "", damage: dmg, attackTarget: "choose" };
+  }
+
+  it("lets the targeted star point out to escape: nullify + caller penalty", () => {
+    let s = freshGame();
+    const attackerId = currentPlayerId(s)!;
+    const target = s.players.find((p) => p.id !== attackerId && p.alive)!;
+    s.hands[attackerId] = [chooseAtk("k1", 30), ...s.hands[attackerId]];
+    const tHpBefore = target.hp;
+    const aHpBefore = s.players.find((p) => p.id === attackerId)!.hp;
+
+    s = applyAction(s, { type: "play_attack", cardId: "k1", targetId: target.id, stella: true }, attackerId);
+    expect(s.phase).toBe("stella");
+    expect(s.stella?.targetId).toBe(target.id);
+
+    s = applyAction(s, { type: "call_out" }, target.id);
+
+    const after = s.players.find((p) => p.id === target.id)!;
+    const atk = s.players.find((p) => p.id === attackerId)!;
+    expect(s.phase).not.toBe("stella");
+    expect(after.alive).toBe(true);
+    expect(after.hp).toBeGreaterThanOrEqual(tHpBefore); // nullified (+ maybe a heal buff)
+    expect(atk.hp).toBe(aHpBefore - 10); // caller failed the finish
+  });
+
+  it("penalises a bystander who points out a bluff (−10), plus the caller", () => {
+    let s = freshGame();
+    const attackerId = currentPlayerId(s)!;
+    const others = s.players.filter((p) => p.id !== attackerId && p.alive);
+    const target = others[0];
+    const bystander = others[1];
+    s.hands[attackerId] = [chooseAtk("b1", 10), ...s.hands[attackerId]]; // 10 vs 100 → not lethal
+    s.hands[target.id] = []; // no shields → takes it
+    const aHpBefore = s.players.find((p) => p.id === attackerId)!.hp;
+
+    s = applyAction(s, { type: "play_attack", cardId: "b1", targetId: target.id, stella: true }, attackerId);
+    expect(s.stella?.wouldKill).toBe(false);
+    s = applyAction(s, { type: "call_out" }, bystander.id); // gambles wrong
+    expect(s.phase).toBe("stella"); // bystander point-out keeps the window open
+    s = applyAction(s, { type: "defend", cardId: null }, target.id); // target takes the hit → closes
+
+    const by = s.players.find((p) => p.id === bystander.id)!;
+    const atk = s.players.find((p) => p.id === attackerId)!;
+    const tgt = s.players.find((p) => p.id === target.id)!;
+    expect(by.hp).toBe(90); // −10 mispoint
+    expect(tgt.hp).toBe(90); // took the 10
+    expect(atk.hp).toBe(aHpBefore - 10); // caller didn't finish
+  });
+
+  it("rewards a correct bystander and lands the finish (no caller penalty)", () => {
+    let s = freshGame();
+    const attackerId = currentPlayerId(s)!;
+    const others = s.players.filter((p) => p.id !== attackerId && p.alive);
+    const target = others[0];
+    const bystander = others[1];
+    target.hp = 10; // a 10-damage flare is lethal here
+    s.hands[attackerId] = [chooseAtk("g1", 10), ...s.hands[attackerId]];
+    s.hands[target.id] = [];
+    const byHpBefore = bystander.hp;
+    const aHpBefore = s.players.find((p) => p.id === attackerId)!.hp;
+
+    s = applyAction(s, { type: "play_attack", cardId: "g1", targetId: target.id, stella: true }, attackerId);
+    expect(s.stella?.wouldKill).toBe(true);
+    s = applyAction(s, { type: "call_out" }, bystander.id);
+    s = applyAction(s, { type: "defend", cardId: null }, target.id);
+
+    const tgt = s.players.find((p) => p.id === target.id)!;
+    const by = s.players.find((p) => p.id === bystander.id)!;
+    const atk = s.players.find((p) => p.id === attackerId)!;
+    expect(tgt.alive).toBe(false); // finished
+    expect(by.hp).toBeGreaterThanOrEqual(byHpBefore); // correct catch → buff, never a penalty
+    expect(atk.hp).toBe(aHpBefore); // the finish landed → no caller penalty
+  });
+});
+
 describe("rejecting illegal actions", () => {
   it("ignores actions from a player when it is not their turn", () => {
     const s = freshGame();

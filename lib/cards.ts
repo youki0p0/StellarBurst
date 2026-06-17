@@ -86,11 +86,14 @@ function makeAttack(rng: () => number): Card {
   const isAoe = target === "all";
   const chain = target === "next" && rng() < 0.2;
   const fatal = !isAoe && !chain && rng() < 0.05; // rare, never on AOE/chain
-  // Tuned for ~5–10 min games at 100 Luminosity: single-target flares 9–22,
-  // chains a touch softer, AOE small (4–9).
+  // Round, readable damage values (multiples of 10) so players can do the math
+  // at a glance. Single-target flares 10/20/30 (avg ~18); chains a touch softer
+  // (10/20) since they can hit several stars; AOE a flat 10.
   const damage = isAoe
-    ? 4 + Math.floor(rng() * 6)
-    : (chain ? 8 : 9) + Math.floor(rng() * (chain ? 9 : 14));
+    ? 10
+    : chain
+      ? weightedPick<number>([[10, 6], [20, 4]], rng)
+      : weightedPick<number>([[10, 4], [20, 4], [30, 2]], rng);
   return {
     id: nextCardId(),
     kind: "attack",
@@ -146,9 +149,9 @@ function makeSpecial(rng: () => number): Card {
   );
   const meta = SPECIAL_META[effect];
   let value: number | undefined;
-  if (effect === "heal") value = 15 + Math.floor(rng() * 16); // 15..30
+  if (effect === "heal") value = weightedPick<number>([[20, 3], [30, 2]], rng); // round
   if (effect === "skip_turn") value = 60; // 60% chance
-  if (effect === "slip_damage") value = 8 + Math.floor(rng() * 5); // 8..12 per turn
+  if (effect === "slip_damage") value = 10; // round, per turn
   return {
     id: nextCardId(),
     kind: "special",

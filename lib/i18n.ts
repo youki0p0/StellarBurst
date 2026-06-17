@@ -176,17 +176,30 @@ const DICT: Record<string, Entry> = {
   "kind.defense": { ja: "防", en: "DEF" },
   "kind.special": { ja: "特", en: "SPC" },
 
-  // STELLA Call (Burst)
-  "common.burst": { ja: "BURST", en: "BURST" },
-  "stella.declare": { ja: "STELLA！", en: "STELLA!" },
-  "stella.callout": { ja: "STELLA言ってない！", en: "No STELLA!" },
-  "stella.prompt": { ja: "輝度が低い！STELLA！を宣言！", en: "You're Burst — call STELLA!" },
-  "stella.calloutOf": { ja: "{name} はSTELLA言った？", en: "Did {name} call STELLA?" },
-  "log.stella": { ja: "{name} が STELLA！ を宣言！", en: "{name} calls STELLA!" },
-  "log.calledOut": {
-    ja: "{caller} の指摘！{target} はSTELLA言い忘れて {dmg} 減光！",
-    en: "{caller} catches {target} — no STELLA! (−{dmg} light).",
+  // STELLA finishing call
+  "common.burst": { ja: "危険", en: "LOW" },
+  "stella.toggle": { ja: "STELLAコール（トドメ宣言）", en: "STELLA call (declare a finish)" },
+  "stella.declareBtn": { ja: "🌟 STELLA！で使う", en: "🌟 Play with STELLA!" },
+  "stella.windowTitle": { ja: "STELLA！宣言中", en: "STELLA called!" },
+  "stella.youAreTarget": { ja: "トドメ宣言された！言い返して回避！", en: "You're called for the finish — call back to escape!" },
+  "stella.escapeBtn": { ja: "🌟 STELLA！と言い返す（回避＆強化）", en: "🌟 Call STELLA back (escape + buff)" },
+  "stella.pointOutBtn": { ja: "指摘する！", en: "Point it out!" },
+  "stella.pointedAlready": { ja: "指摘済み", en: "Pointed out" },
+  "stella.bystanderHint": { ja: "本当にトドメ？的中で強化・ハズレで −10", en: "A real finish? Buff if right · −10 if wrong" },
+  "stella.attackerWait": { ja: "相手の反応を待っています…", en: "Waiting for the table to react…" },
+  "log.stellaDeclare": {
+    ja: "{name} が {target} にトドメ宣言——STELLA！",
+    en: "{name} calls STELLA on {target} — going for the finish!",
   },
+  "log.stellaEscape": { ja: "{name} が STELLA！と言い返して回避！", en: "{name} calls STELLA back and escapes!" },
+  "log.stellaFail": { ja: "{name} はトドメを外した（コール失敗で {dmg} 減光）。", en: "{name} failed the finish (−{dmg} light)." },
+  "log.pointOut": { ja: "{name} が指摘した！", en: "{name} points it out!" },
+  "log.pointHit": { ja: "{name} の指摘は的中！", en: "{name} called it right!" },
+  "log.mispoint": { ja: "{name} の誤指摘——{dmg} 減光。", en: "{name} mispointed — −{dmg} light." },
+  "log.buffHeal": { ja: "{name} は加護で {amt} 再点火！", en: "{name} is rewarded — rekindles {amt} light!" },
+  "log.buffShield": { ja: "{name} は星盾の加護を得た！", en: "{name} gains a shield aegis!" },
+  "log.buffCard": { ja: "{name} は手札を1枚授かった！", en: "{name} is granted an extra card!" },
+  "log.guardHold": { ja: "{name} の星盾の加護がフレアを弾いた！", en: "{name}'s aegis shrugs off the flare!" },
 
   // Settings
   "settings.language": { ja: "言語", en: "Language" },

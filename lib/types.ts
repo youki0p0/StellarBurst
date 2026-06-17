@@ -56,6 +56,8 @@ export interface PlayerEffects {
   defenseLimitedTurns: number;
   /** Damage-over-time applied at the start of the player's turns. */
   slip: { perTurn: number; turnsLeft: number } | null;
+  /** Free flare-blocks granted by a STELLA buff; each consumes one incoming hit. */
+  guard: number;
 }
 
 export interface Player {
@@ -74,7 +76,27 @@ export interface Player {
   effects: PlayerEffects;
 }
 
-export type GamePhase = "lobby" | "action" | "defense" | "finished";
+export type GamePhase = "lobby" | "action" | "stella" | "defense" | "finished";
+
+/**
+ * A live "STELLA!" finishing call. Opened when an attacker declares a killing
+ * blow. During the window other living players race to point it out (call_out),
+ * and the targeted star can point out to escape (nullify + buff).
+ */
+export interface StellaCall {
+  attackerId: string;
+  targetId: string;
+  /**
+   * Whether the declared flare would actually darken the target (computed at
+   * declaration, undefended). Fixes whether point-outs are correct (buff) or
+   * mistaken (−10), independent of how the blow finally resolves.
+   */
+  wouldKill: boolean;
+  /** Ids of non-target players who have pointed out, in order (first = catcher). */
+  pointedBy: string[];
+  /** Wall-clock ms after which the host auto-resolves the window. */
+  deadline: number;
+}
 
 export interface PendingAttack {
   attackerId: string;
@@ -117,8 +139,8 @@ export interface RoomState {
   currentTurnIndex: number;
   /** Turn-order direction: +1 forward, -1 reversed (UNO Reverse). */
   direction: 1 | -1;
-  /** A Burst (low-luminosity) star that still owes a "STELLA!" call, if any. */
-  stella: { playerId: string } | null;
+  /** An open STELLA! finishing call (reaction window), if any. */
+  stella: StellaCall | null;
   /** Per-player hand of cards (keyed by player id). */
   hands: Record<string, Card[]>;
   pending: PendingAttack | null;
@@ -130,10 +152,11 @@ export interface RoomState {
 
 /** Actions a client can request from the host-authoritative reducer. */
 export type GameAction =
-  | { type: "play_attack"; cardId: string; targetId?: string } // targetId only for "choose" cards
+  // `stella` declares a finishing blow (opens the STELLA window); `targetId`
+  // only for rare "choose" cards.
+  | { type: "play_attack"; cardId: string; targetId?: string; stella?: boolean }
   | { type: "play_heal"; cardId: string }
   | { type: "play_special"; cardId: string }
   | { type: "pass" }
   | { type: "defend"; cardId: string | null }
-  | { type: "stella_call" } // a Burst star declares "STELLA!"
-  | { type: "call_out"; targetId: string }; // call out a Burst star who forgot
+  | { type: "call_out" }; // point out the open STELLA finish (指摘)

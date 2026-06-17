@@ -25,6 +25,7 @@ import {
   newId,
   removePlayer,
   resetToLobby,
+  resolveStellaTimeout,
   startGame,
 } from "@/lib/room";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -35,6 +36,7 @@ let channel: RealtimeChannel | null = null;
 let roomId: string | null = null;
 let myPlayerId: string | null = null;
 let cpuTimer: ReturnType<typeof setTimeout> | null = null;
+let stellaTimer: ReturnType<typeof setTimeout> | null = null;
 let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let applying = false;
@@ -84,9 +86,11 @@ interface GameStore {
 export const useGameStore = create<GameStore>((set, get) => {
   function teardown() {
     if (cpuTimer) clearTimeout(cpuTimer);
+    if (stellaTimer) clearTimeout(stellaTimer);
     if (reloadTimer) clearTimeout(reloadTimer);
     if (pollTimer) clearInterval(pollTimer);
     cpuTimer = null;
+    stellaTimer = null;
     reloadTimer = null;
     pollTimer = null;
     unsubscribeRoom(channel);
@@ -184,23 +188,56 @@ export const useGameStore = create<GameStore>((set, get) => {
       clearTimeout(cpuTimer);
       cpuTimer = null;
     }
+    if (stellaTimer) {
+      clearTimeout(stellaTimer);
+      stellaTimer = null;
+    }
     const me = state.players.find((p) => p.id === myPlayerId);
     if (!me?.isHost) return;
 
-    // A Burst CPU declares STELLA! on its own (bots never forget).
-    const owe = state.stella;
-    if (owe) {
-      const sp = state.players.find((x) => x.id === owe.playerId);
-      if (sp?.isCPU) {
+    // --- Open STELLA window ---
+    if (state.phase === "stella" && state.stella && state.pending) {
+      const s = state.stella;
+      const target = state.players.find((p) => p.id === s.targetId);
+      // The host always enforces the reaction deadline as a safety net.
+      stellaTimer = setTimeout(() => {
+        void applyAndPersist((st) => resolveStellaTimeout(st));
+      }, Math.max(300, s.deadline - Date.now()));
+
+      if (target?.isCPU && target.alive) {
+        // A finished CPU usually points out to escape; otherwise it takes the hit.
+        const escape = s.wouldKill ? Math.random() < 0.75 : Math.random() < 0.4;
         cpuTimer = setTimeout(() => {
-          void applyAndPersist((s) =>
-            s.stella?.playerId === sp.id
-              ? applyAction(s, { type: "stella_call" }, sp.id)
-              : s,
-          );
-        }, 600);
+          void applyAndPersist((st) => {
+            if (st.phase !== "stella" || st.stella?.targetId !== target.id) return st;
+            return escape
+              ? applyAction(st, { type: "call_out" }, target.id)
+              : applyAction(st, { type: "defend", cardId: null }, target.id);
+          });
+        }, 700);
         return;
       }
+
+      // Human target: a CPU bystander may gamble a point-out for chaos.
+      const bystander = state.players.find(
+        (p) =>
+          p.isCPU &&
+          p.alive &&
+          p.id !== s.attackerId &&
+          p.id !== s.targetId &&
+          !s.pointedBy.includes(p.id),
+      );
+      if (bystander && Math.random() < (s.wouldKill ? 0.4 : 0.12)) {
+        cpuTimer = setTimeout(() => {
+          void applyAndPersist((st) => {
+            if (st.phase !== "stella" || !st.stella || st.stella.pointedBy.includes(bystander.id)) {
+              return st;
+            }
+            return applyAction(st, { type: "call_out" }, bystander.id);
+          });
+        }, 1200);
+      }
+      return;
     }
 
     if (state.phase === "action") {
