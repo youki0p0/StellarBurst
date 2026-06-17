@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { useT } from "@/store/i18n";
+import { playSfx } from "@/lib/sfx";
 
 export function ResultScreen() {
   const t = useT();
@@ -17,6 +19,10 @@ export function ResultScreen() {
   const me = roomState.players.find((p) => p.clientId === identity.id);
   const iWon = Boolean(me && roomState.winnerId === me.id);
 
+  useEffect(() => {
+    playSfx(iWon ? "win" : "darken");
+  }, [iWon]);
+
   const goHome = () => {
     leaveRoom();
     router.push("/");
@@ -24,9 +30,19 @@ export function ResultScreen() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+      {/* Neon "last star" */}
       <div className="animate-pop">
-        <div className="text-7xl">{iWon ? "👑" : "💥"}</div>
-        <h1 className="mt-3 text-3xl font-black text-neon-gold">
+        <div
+          className={[
+            "mx-auto flex h-24 w-24 items-center justify-center rounded-full text-5xl",
+            iWon
+              ? "animate-floaty bg-neon-gold/15 text-neon-gold shadow-neon"
+              : "bg-board-700 text-slate-500 grayscale",
+          ].join(" ")}
+        >
+          ★
+        </div>
+        <h1 className="mt-4 text-3xl font-black text-neon-gold">
           {winner ? `${winner.name}${t("result.wins")}` : t("result.gameOver")}
         </h1>
         <p className="mt-1 text-slate-300">
@@ -43,12 +59,14 @@ export function ResultScreen() {
             .sort((a, b) => b.hp - a.hp)
             .map((p) => (
               <li key={p.id} className="flex justify-between">
-                <span>
-                  {p.id === roomState.winnerId && "🏆 "}
+                <span className={p.id === roomState.winnerId ? "font-bold text-neon-gold" : ""}>
+                  {p.id === roomState.winnerId && "★ "}
                   {p.name}
                   {p.isCPU && ` (${t("common.cpu")})`}
                 </span>
-                <span className="tabular-nums text-slate-400">{Math.max(0, p.hp)} HP</span>
+                <span className="tabular-nums text-slate-400">
+                  {Math.max(0, p.hp)} {t("result.lum")}
+                </span>
               </li>
             ))}
         </ul>

@@ -37,7 +37,7 @@ export function generateRoomCode(): string {
 export const MAX_PLAYERS = 8;
 
 /** At or below this Luminosity a star is "Burst" and owes a STELLA! call. */
-export const BURST_THRESHOLD = 20;
+export const BURST_THRESHOLD = 25;
 /** Light lost when called out for forgetting STELLA!. */
 const STELLA_PENALTY = 5;
 
