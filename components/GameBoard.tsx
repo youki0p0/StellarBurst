@@ -85,6 +85,20 @@ export function GameBoard() {
   >(null);
   const lastEventId = useRef<string | null>(null);
 
+  // Fit the orbit board to whatever space is left so the whole game stays on
+  // one screen on any iPhone — the board shrinks/grows to the leftover area.
+  const boardWrapRef = useRef<HTMLDivElement>(null);
+  const [boardSize, setBoardSize] = useState(0);
+  useEffect(() => {
+    const el = boardWrapRef.current;
+    if (!el) return;
+    const measure = () => setBoardSize(Math.floor(Math.min(el.clientWidth, el.clientHeight)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // React to fresh battle-log events with sound + a star flash.
   useEffect(() => {
     const log = roomState.log;
@@ -207,9 +221,70 @@ export function GameBoard() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      {/* STELLA finishing window — centered popup, floats over the board/log */}
+      {inStella && stella && finishTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" aria-hidden />
+          <div className="panel relative w-full max-w-xs animate-pop border-neon-gold/70 bg-board-800/95 p-4 shadow-neon">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-black tracking-widest text-neon-gold">
+                🌟 {t("stella.windowTitle")}
+              </div>
+              <div className="text-2xl font-black tabular-nums text-neon-pink">{secsLeft}</div>
+            </div>
+
+            {iAmFinished ? (
+              <>
+                <p className="mt-1 text-sm font-bold text-neon-pink">{t("stella.youAreTarget")}</p>
+                <button
+                  onClick={() => sendGameAction({ type: "call_out" })}
+                  className="btn-primary mt-2 w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-3 text-lg font-black"
+                >
+                  {t("stella.escapeBtn")}
+                </button>
+                {stellaShields.length > 0 && (
+                  <div className="mt-2 flex flex-wrap justify-center gap-2">
+                    {stellaShields.map((c) => (
+                      <CardView
+                        key={c.id}
+                        card={c}
+                        compact
+                        onClick={() => sendGameAction({ type: "defend", cardId: c.id })}
+                      />
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => sendGameAction({ type: "defend", cardId: null })}
+                  className="btn-secondary mt-2 w-full"
+                >
+                  {t("game.takeHit")}
+                </button>
+              </>
+            ) : iAmFinisher ? (
+              <p className="mt-2 text-center text-sm text-slate-300">{t("stella.attackerWait")}</p>
+            ) : iCanPoint ? (
+              <>
+                <button
+                  onClick={() => sendGameAction({ type: "call_out" })}
+                  className="btn-primary mt-2 w-full border-neon-pink/70 py-3 text-lg font-black"
+                >
+                  {t("stella.pointOutBtn")}
+                </button>
+                <p className="mt-1 text-center text-xs text-slate-400">{t("stella.bystanderHint")}</p>
+              </>
+            ) : (
+              <p className="mt-2 text-center text-sm text-slate-400">
+                {iPointed ? t("stella.pointedAlready") : t("stella.attackerWait")}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Turn banner */}
-      <div className="panel flex items-center justify-between p-3">
+      <div className="panel flex shrink-0 items-center justify-between p-3">
         <div>
           <div className="text-xs uppercase tracking-widest text-slate-400">
             {t("game.currentTurn")}
@@ -233,85 +308,30 @@ export function GameBoard() {
         </div>
       </div>
 
-      {/* Star statuses on the orbit ring (compact, top of screen) */}
-      <OrbitBoard
-        players={roomState.players}
-        turnId={turnId}
-        direction={roomState.direction}
-        selfClientId={identity.id}
-        className="max-w-[17rem]"
-        selectableIds={
-          targetingMode
-            ? opponents.filter((p) => p.alive).map((p) => p.id)
-            : []
-        }
-        selectedId={null}
-        finishingId={inStella && stella ? stella.targetId : null}
-        onSelect={(id) => playCard(id)}
-        flash={flash}
-      />
+      {/* Star statuses on the orbit ring — flex-fills the leftover space and
+          shrinks to keep everything on one screen. */}
+      <div ref={boardWrapRef} className="flex min-h-0 flex-1 items-center justify-center">
+        <OrbitBoard
+          players={roomState.players}
+          turnId={turnId}
+          direction={roomState.direction}
+          selfClientId={identity.id}
+          sizePx={boardSize || undefined}
+          selectableIds={
+            targetingMode
+              ? opponents.filter((p) => p.alive).map((p) => p.id)
+              : []
+          }
+          selectedId={null}
+          finishingId={inStella && stella ? stella.targetId : null}
+          onSelect={(id) => playCard(id)}
+          flash={flash}
+        />
+      </div>
 
-      {/* Bottom cluster (pinned low for thumb reach): STELLA → defense → hand → log */}
-      <div className="mt-auto flex flex-col gap-3">
-        {/* STELLA finishing window — sits right above the hand */}
-        {inStella && stella && finishTarget && (
-          <div className="panel animate-pop border-neon-gold/70 bg-gradient-to-r from-neon-gold/10 to-neon-pink/10 p-3">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-black tracking-widest text-neon-gold">
-                🌟 {t("stella.windowTitle")}
-              </div>
-              <div className="text-lg font-black tabular-nums text-neon-pink">{secsLeft}</div>
-            </div>
-
-            {iAmFinished ? (
-              <>
-                <p className="mt-1 text-sm font-bold text-neon-pink">{t("stella.youAreTarget")}</p>
-                <button
-                  onClick={() => sendGameAction({ type: "call_out" })}
-                  className="btn-primary mt-2 w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-3 text-lg font-black"
-                >
-                  {t("stella.escapeBtn")}
-                </button>
-                {stellaShields.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {stellaShields.map((c) => (
-                      <CardView
-                        key={c.id}
-                        card={c}
-                        compact
-                        onClick={() => sendGameAction({ type: "defend", cardId: c.id })}
-                      />
-                    ))}
-                  </div>
-                )}
-                <button
-                  onClick={() => sendGameAction({ type: "defend", cardId: null })}
-                  className="btn-secondary mt-2 w-full"
-                >
-                  {t("game.takeHit")}
-                </button>
-              </>
-            ) : iAmFinisher ? (
-              <p className="mt-1 text-sm text-slate-300">{t("stella.attackerWait")}</p>
-            ) : iCanPoint ? (
-              <>
-                <button
-                  onClick={() => sendGameAction({ type: "call_out" })}
-                  className="btn-secondary mt-2 w-full border-neon-pink/70 text-neon-pink"
-                >
-                  {t("stella.pointOutBtn")}
-                </button>
-                <p className="mt-1 text-center text-xs text-slate-400">{t("stella.bystanderHint")}</p>
-              </>
-            ) : (
-              <p className="mt-1 text-sm text-slate-400">
-                {iPointed ? t("stella.pointedAlready") : t("stella.attackerWait")}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Defense prompt — also just above the hand */}
+      {/* Bottom cluster (defense → hand → log), kept compact and always visible */}
+      <div className="flex shrink-0 flex-col gap-2">
+        {/* Defense prompt — just above the hand */}
         {amDefending && pending && (
           <div className="panel border-neon-pink/60 p-3">
             <div className="mb-2 text-sm font-bold text-neon-pink">

@@ -36,7 +36,7 @@ export function BattleLog({ log }: { log: GameEvent[] }) {
   }
 
   return (
-    <div className="panel flex h-40 flex-col p-2">
+    <div className="panel flex h-28 flex-col p-2">
       <div className="mb-1 px-1 text-xs font-bold uppercase tracking-widest text-slate-400">
         {t("log.title")}
       </div>

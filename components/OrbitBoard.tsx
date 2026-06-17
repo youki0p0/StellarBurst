@@ -17,6 +17,9 @@ export interface OrbitBoardProps {
   flash?: { id: string; kind: "hit" | "reflect" | "heal" | "super" } | null;
   /** Width cap for the square board (defaults to a roomy size). */
   className?: string;
+  /** Explicit square side in px (overrides className sizing) — used to fit the
+   *  board to whatever space is left on screen. */
+  sizePx?: number;
 }
 
 const FLASH_STYLE: Record<NonNullable<OrbitBoardProps["flash"]>["kind"], string> = {
@@ -38,13 +41,17 @@ export function OrbitBoard(props: OrbitBoardProps) {
     onSelect,
     flash = null,
     className = "max-w-md",
+    sizePx,
   } = props;
 
   const t = useT();
   const n = Math.max(players.length, 1);
 
   return (
-    <div className={`relative mx-auto aspect-square w-full ${className}`}>
+    <div
+      className={`relative mx-auto aspect-square ${sizePx ? "" : `w-full ${className}`}`}
+      style={sizePx ? { width: sizePx, height: sizePx } : undefined}
+    >
       {/* Faint orbit ring (passes through each star's outer anchor point) */}
       <div
         className="pointer-events-none absolute rounded-full border border-board-600/60"
