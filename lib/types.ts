@@ -46,7 +46,10 @@ export interface PlayerEffects {
 }
 
 export interface Player {
+  /** Stable DB primary key (uuid). Used everywhere as the player's identity. */
   id: string;
+  /** Per-browser client id from localStorage; identifies the human behind a seat. */
+  clientId: string;
   name: string;
   hp: number;
   maxHp: number;

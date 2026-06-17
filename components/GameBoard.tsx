@@ -27,8 +27,8 @@ export function GameBoard() {
   const sendGameAction = useGameStore((s) => s.sendGameAction);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
-  const myId = identity.id;
-  const me = roomState.players.find((p) => p.id === myId);
+  const me = roomState.players.find((p) => p.clientId === identity.id);
+  const myId = me?.id ?? "";
   const hand = useMemo(() => roomState.hands[myId] ?? [], [roomState.hands, myId]);
   const turnId = currentPlayerId(roomState);
   const turnPlayer = roomState.players.find((p) => p.id === turnId);

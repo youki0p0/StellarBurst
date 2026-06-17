@@ -12,7 +12,8 @@ export function ResultScreen() {
   const leaveRoom = useGameStore((s) => s.leaveRoom);
 
   const winner = roomState.players.find((p) => p.id === roomState.winnerId);
-  const iWon = roomState.winnerId === identity.id;
+  const me = roomState.players.find((p) => p.clientId === identity.id);
+  const iWon = Boolean(me && roomState.winnerId === me.id);
 
   const goHome = () => {
     leaveRoom();

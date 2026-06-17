@@ -14,7 +14,7 @@ export function RoomLobby() {
 
   if (!roomState) return null;
 
-  const me = roomState.players.find((p) => p.id === identity.id);
+  const me = roomState.players.find((p) => p.clientId === identity.id);
   const humans = roomState.players.filter((p) => !p.isCPU);
   const allReady = humans.every((p) => p.isReady);
   const canStart = isHost && humans.length >= 2 && allReady;
@@ -65,7 +65,7 @@ export function RoomLobby() {
                     CPU
                   </span>
                 )}
-                {p.id === identity.id && <span className="text-xs text-slate-400">you</span>}
+                {p.clientId === identity.id && <span className="text-xs text-slate-400">you</span>}
               </span>
               <span
                 className={

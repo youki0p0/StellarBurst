@@ -1,41 +1,49 @@
 "use client";
 
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { chooseCpuAction, chooseCpuDefense } from "@/lib/cpu";
-import { RoomNet, type NetRequest } from "@/lib/net";
 import {
-  addPlayer,
+  createRoomRow,
+  joinRoomRow,
+  leaveRoomRow,
+  loadRoomState,
+  persistState,
+  setReadyRow,
+  subscribeRoom,
+  unsubscribeRoom,
+} from "@/lib/db";
+import {
   applyAction,
-  createRoomState,
   currentPlayerId,
   generateRoomCode,
-  makePlayer,
-  removePlayer,
   resetToLobby,
-  setReady,
   startGame,
 } from "@/lib/room";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import type { GameAction, Player, RoomState } from "@/lib/types";
+import type { GameAction, RoomState } from "@/lib/types";
 
-// Kept outside the store so they aren't part of serializable state.
-let net: RoomNet | null = null;
+// Non-serializable connection state kept outside the store.
+let channel: RealtimeChannel | null = null;
+let roomId: string | null = null;
+let myPlayerId: string | null = null;
 let cpuTimer: ReturnType<typeof setTimeout> | null = null;
+let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+let applying = false;
 
 interface Identity {
-  id: string;
+  id: string; // stable per-browser client_id
   name: string;
 }
 
 function loadIdentity(): Identity {
-  if (typeof window === "undefined") return { id: "server", name: "Player" };
-  let id = localStorage.getItem("sb_player_id");
+  if (typeof window === "undefined") return { id: "server", name: "" };
+  let id = localStorage.getItem("sb_client_id");
   if (!id) {
-    id = `p_${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem("sb_player_id", id);
+    id = `c_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+    localStorage.setItem("sb_client_id", id);
   }
-  const name = localStorage.getItem("sb_player_name") || "";
-  return { id, name };
+  return { id, name: localStorage.getItem("sb_player_name") || "" };
 }
 
 interface GameStore {
@@ -57,80 +65,91 @@ interface GameStore {
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
-  /** Host: push authoritative state to everyone and re-evaluate CPU turns. */
-  function publish(state: RoomState) {
-    set({ roomState: state });
-    net?.broadcastState(state);
-    scheduleCpu();
+  function teardown() {
+    if (cpuTimer) clearTimeout(cpuTimer);
+    if (reloadTimer) clearTimeout(reloadTimer);
+    cpuTimer = null;
+    reloadTimer = null;
+    unsubscribeRoom(channel);
+    channel = null;
+    roomId = null;
+    myPlayerId = null;
   }
 
-  /** Host: apply an action to the authoritative state. */
-  function hostApply(action: GameAction, actorId: string) {
-    const current = get().roomState;
-    if (!current) return;
-    publish(applyAction(current, action, actorId));
+  /** Reload authoritative state from the DB and refresh derived flags. */
+  async function reload() {
+    if (!roomId) return;
+    const state = await loadRoomState(roomId);
+    if (!state) return;
+    const me = state.players.find((p) => p.id === myPlayerId);
+    set({ roomState: state, isHost: Boolean(me?.isHost) });
+    maybeRunCpu(state);
   }
 
-  /** Host: if it's a CPU's turn (or a CPU must defend), act after a beat. */
-  function scheduleCpu() {
+  function scheduleReload() {
+    if (reloadTimer) clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => void reload(), 90);
+  }
+
+  /**
+   * Load → reduce → persist with optimistic concurrency. On a version conflict
+   * we reload the latest state and retry a few times.
+   */
+  async function applyAndPersist(transform: (s: RoomState) => RoomState) {
+    if (!roomId || applying) return;
+    applying = true;
+    try {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const base = get().roomState;
+        if (!base) return;
+        const next = transform(base);
+        if (next.version === base.version) return; // no-op / illegal action
+        const ok = await persistState(roomId, base, next);
+        if (ok) {
+          const me = next.players.find((p) => p.id === myPlayerId);
+          set({ roomState: next, isHost: Boolean(me?.isHost) });
+          maybeRunCpu(next);
+          return;
+        }
+        await reload(); // conflict: refresh and retry
+      }
+    } finally {
+      applying = false;
+    }
+  }
+
+  /** Host only: drive CPU players' actions / defenses on a short delay. */
+  function maybeRunCpu(state: RoomState) {
     if (cpuTimer) {
       clearTimeout(cpuTimer);
       cpuTimer = null;
     }
-    const state = get().roomState;
-    if (!state || !get().isHost) return;
+    const me = state.players.find((p) => p.id === myPlayerId);
+    if (!me?.isHost) return;
 
     if (state.phase === "action") {
-      const id = currentPlayerId(state);
-      const p = state.players.find((x) => x.id === id);
+      const cur = currentPlayerId(state);
+      const p = state.players.find((x) => x.id === cur);
       if (p?.isCPU && p.alive) {
-        cpuTimer = setTimeout(() => hostApply(chooseCpuAction(state, p.id), p.id), 750);
+        cpuTimer = setTimeout(() => {
+          void applyAndPersist((s) => {
+            if (s.phase !== "action" || currentPlayerId(s) !== p.id) return s;
+            return applyAction(s, chooseCpuAction(s, p.id), p.id);
+          });
+        }, 800);
       }
     } else if (state.phase === "defense" && state.pending) {
-      const t = state.players.find((x) => x.id === state.pending!.targetId);
+      const targetId = state.pending.targetId;
+      const t = state.players.find((x) => x.id === targetId);
       if (t?.isCPU) {
-        cpuTimer = setTimeout(
-          () => hostApply({ type: "defend", cardId: chooseCpuDefense(state, t.id) }, t.id),
-          750,
-        );
+        cpuTimer = setTimeout(() => {
+          void applyAndPersist((s) => {
+            if (s.phase !== "defense" || s.pending?.targetId !== t.id) return s;
+            return applyAction(s, { type: "defend", cardId: chooseCpuDefense(s, t.id) }, t.id);
+          });
+        }, 800);
       }
     }
-  }
-
-  /** Host: handle inbound client requests. */
-  function handleRequest(req: NetRequest) {
-    const current = get().roomState;
-    if (!current) return;
-    switch (req.reqType) {
-      case "join":
-        publish(addPlayer(current, req.fromId, req.name));
-        break;
-      case "ready":
-        publish(setReady(current, req.fromId, req.ready));
-        break;
-      case "start":
-        publish(startGame(current));
-        break;
-      case "restart":
-        publish(resetToLobby(current));
-        break;
-      case "action":
-        hostApply(req.action, req.fromId);
-        break;
-    }
-  }
-
-  /** Host: reconcile presence (mark disconnects, drop lobby leavers). */
-  function handlePresence(presentIds: string[]) {
-    const current = get().roomState;
-    if (!current) return;
-    let next = current;
-    const present = new Set(presentIds);
-    for (const p of current.players) {
-      if (p.isCPU) continue;
-      if (!present.has(p.id) && p.connected) next = removePlayer(next, p.id);
-    }
-    if (next !== current) publish(next);
   }
 
   return {
@@ -152,26 +171,19 @@ export const useGameStore = create<GameStore>((set, get) => {
         set({ error: "Supabase is not configured." });
         return null;
       }
+      set({ connecting: true, error: null, roomState: null });
+      teardown();
       const code = generateRoomCode();
-      const host: Player = makePlayer(identity.id, identity.name || "Host", {
-        isHost: true,
-      });
-      host.isReady = true;
-      const state = createRoomState(code, host);
-      set({ roomState: state, isHost: true, connecting: true, error: null });
-
-      net?.disconnect();
-      net = new RoomNet(code, { id: identity.id, name: host.name }, true);
-      const ok = net.connect({
-        onState: (s) => set({ roomState: s }),
-        onRequest: handleRequest,
-        onPresence: handlePresence,
-      });
-      set({ connecting: false });
-      if (!ok) {
-        set({ error: "Could not connect to realtime service." });
+      const res = await createRoomRow(code, { clientId: identity.id, name: identity.name || "Host" });
+      if (!res) {
+        set({ connecting: false, error: "Could not create room. Check Supabase setup." });
         return null;
       }
+      roomId = res.roomId;
+      myPlayerId = res.playerId;
+      channel = subscribeRoom(roomId, scheduleReload);
+      await reload();
+      set({ connecting: false, isHost: true });
       return code;
     },
 
@@ -181,56 +193,50 @@ export const useGameStore = create<GameStore>((set, get) => {
         set({ error: "Supabase is not configured." });
         return false;
       }
-      set({ isHost: false, connecting: true, error: null, roomState: null });
-      net?.disconnect();
-      net = new RoomNet(code, { id: identity.id, name: identity.name || "Player" }, false);
-      const ok = net.connect({ onState: (s) => set({ roomState: s }) });
-      set({ connecting: false });
-      if (!ok) {
-        set({ error: "Could not connect to realtime service." });
+      set({ connecting: true, error: null, roomState: null });
+      teardown();
+      const res = await joinRoomRow(code, { clientId: identity.id, name: identity.name || "Player" });
+      if (!res.ok || !res.roomId || !res.playerId) {
+        const msg =
+          res.error === "not_found"
+            ? "Room not found."
+            : res.error === "in_progress"
+              ? "That game is already in progress."
+              : "Could not join room.";
+        set({ connecting: false, error: msg });
         return false;
       }
+      roomId = res.roomId;
+      myPlayerId = res.playerId;
+      channel = subscribeRoom(roomId, scheduleReload);
+      await reload();
+      set({ connecting: false });
       return true;
     },
 
     leaveRoom: () => {
-      if (cpuTimer) clearTimeout(cpuTimer);
-      cpuTimer = null;
-      net?.disconnect();
-      net = null;
+      const { roomState } = get();
+      // Only vacate the seat while still in the lobby.
+      if (roomState?.phase === "lobby" && myPlayerId) void leaveRoomRow(myPlayerId);
+      teardown();
       set({ roomState: null, isHost: false, error: null });
     },
 
     toggleReady: () => {
-      const { roomState, identity, isHost } = get();
-      if (!roomState) return;
-      const me = roomState.players.find((p) => p.id === identity.id);
-      const ready = !me?.isReady;
-      if (isHost) {
-        publish(setReady(roomState, identity.id, ready));
-      } else {
-        net?.sendRequest({ reqType: "ready", fromId: identity.id, ready });
-      }
+      const { roomState } = get();
+      const me = roomState?.players.find((p) => p.id === myPlayerId);
+      if (!me) return;
+      void setReadyRow(me.id, !me.isReady);
     },
 
-    startMatch: () => {
-      const { roomState, isHost, identity } = get();
-      if (!roomState) return;
-      if (isHost) publish(startGame(roomState));
-      else net?.sendRequest({ reqType: "start", fromId: identity.id });
-    },
+    startMatch: () => void applyAndPersist((s) => startGame(s)),
 
-    restart: () => {
-      const { roomState, isHost, identity } = get();
-      if (!roomState) return;
-      if (isHost) publish(resetToLobby(roomState));
-      else net?.sendRequest({ reqType: "restart", fromId: identity.id });
-    },
+    restart: () => void applyAndPersist((s) => resetToLobby(s)),
 
     sendGameAction: (action) => {
-      const { isHost, identity } = get();
-      if (isHost) hostApply(action, identity.id);
-      else net?.sendRequest({ reqType: "action", fromId: identity.id, action });
+      if (!myPlayerId) return;
+      const id = myPlayerId;
+      void applyAndPersist((s) => applyAction(s, action, id));
     },
   };
 });

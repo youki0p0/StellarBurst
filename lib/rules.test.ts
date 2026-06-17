@@ -11,6 +11,7 @@ function def(color: Card["color"], effect: Card["defense"]): Card {
 function player(id: string, hp: number, alive = true): Player {
   return {
     id,
+    clientId: id,
     name: id,
     hp,
     maxHp: 100,
