@@ -195,7 +195,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     createRoom: async () => {
       const { identity } = get();
       if (!isSupabaseConfigured) {
-        set({ error: "Supabase is not configured." });
+        set({ error: "error.not_configured" });
         return null;
       }
       set({ connecting: true, error: null, roomState: null });
@@ -203,7 +203,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       const code = generateRoomCode();
       const res = await createRoomRow(code, { clientId: identity.id, name: identity.name || "Host" });
       if (!res) {
-        set({ connecting: false, error: "Could not create room. Check Supabase setup." });
+        set({ connecting: false, error: "error.create_failed" });
         return null;
       }
       roomId = res.roomId;
@@ -218,20 +218,18 @@ export const useGameStore = create<GameStore>((set, get) => {
     joinRoom: async (code) => {
       const { identity } = get();
       if (!isSupabaseConfigured) {
-        set({ error: "Supabase is not configured." });
+        set({ error: "error.not_configured" });
         return false;
       }
       set({ connecting: true, error: null, roomState: null });
       teardown();
       const res = await joinRoomRow(code, { clientId: identity.id, name: identity.name || "Player" });
       if (!res.ok || !res.roomId || !res.playerId) {
-        const msg =
-          res.error === "not_found"
-            ? "Room not found."
-            : res.error === "in_progress"
-              ? "That game is already in progress."
-              : "Could not join room.";
-        set({ connecting: false, error: msg });
+        const errKey =
+          res.error === "not_found" || res.error === "in_progress"
+            ? `error.${res.error}`
+            : "error.join_failed";
+        set({ connecting: false, error: errKey });
         return false;
       }
       roomId = res.roomId;
@@ -246,7 +244,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     startSolo: async (cpuCount = 3) => {
       const { identity } = get();
       if (!isSupabaseConfigured) {
-        set({ error: "Supabase is not configured." });
+        set({ error: "error.not_configured" });
         return null;
       }
       // Build the fully-started game in memory, then persist it in one batch so
@@ -267,7 +265,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       teardown();
       const res = await createStartedRoomRow(state, identity.id);
       if (!res) {
-        set({ connecting: false, error: "Could not start solo game. Check Supabase setup." });
+        set({ connecting: false, error: "error.solo_failed" });
         return null;
       }
       roomId = res.roomId;

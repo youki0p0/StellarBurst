@@ -1,6 +1,7 @@
 "use client";
 
 import type { Player } from "@/lib/types";
+import { useT } from "@/store/i18n";
 
 export function PlayerPanel({
   player,
@@ -19,6 +20,7 @@ export function PlayerPanel({
   onSelect?: () => void;
   handCount?: number;
 }) {
+  const t = useT();
   const pct = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
   const dead = !player.alive || player.hp <= 0;
 
@@ -43,11 +45,11 @@ export function PlayerPanel({
           {isCurrent && <span className="animate-floaty text-neon-purple">▶</span>}
           <span className="truncate font-semibold">
             {player.name}
-            {isSelf && <span className="ml-1 text-xs text-neon-cyan">(you)</span>}
+            {isSelf && <span className="ml-1 text-xs text-neon-cyan">({t("common.you")})</span>}
           </span>
           {player.isCPU && (
             <span className="rounded bg-board-600 px-1.5 py-0.5 text-[10px] font-bold text-slate-300">
-              CPU
+              {t("common.cpu")}
             </span>
           )}
         </div>
@@ -82,7 +84,7 @@ export function PlayerPanel({
             ⏭ skip
           </span>
         )}
-        {dead && <span className="font-bold text-card-red">DEFEATED</span>}
+        {dead && <span className="font-bold text-card-red">{t("common.defeated")}</span>}
       </div>
     </Tag>
   );

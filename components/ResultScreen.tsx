@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useGameStore } from "@/store/gameStore";
+import { useT } from "@/store/i18n";
 
 export function ResultScreen() {
+  const t = useT();
   const router = useRouter();
   const roomState = useGameStore((s) => s.roomState)!;
   const identity = useGameStore((s) => s.identity);
@@ -25,16 +27,16 @@ export function ResultScreen() {
       <div className="animate-pop">
         <div className="text-7xl">{iWon ? "👑" : "💥"}</div>
         <h1 className="mt-3 text-3xl font-black text-neon-gold">
-          {winner ? `${winner.name} wins!` : "Game over"}
+          {winner ? `${winner.name}${t("result.wins")}` : t("result.gameOver")}
         </h1>
         <p className="mt-1 text-slate-300">
-          {iWon ? "You are the last one standing." : "Better luck next burst."}
+          {iWon ? t("result.youStanding") : t("result.betterLuck")}
         </p>
       </div>
 
       <div className="panel w-full max-w-sm p-4">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-400">
-          Final standings
+          {t("result.standings")}
         </h2>
         <ul className="space-y-1 text-left">
           {[...roomState.players]
@@ -44,7 +46,7 @@ export function ResultScreen() {
                 <span>
                   {p.id === roomState.winnerId && "🏆 "}
                   {p.name}
-                  {p.isCPU && " (CPU)"}
+                  {p.isCPU && ` (${t("common.cpu")})`}
                 </span>
                 <span className="tabular-nums text-slate-400">{Math.max(0, p.hp)} HP</span>
               </li>
@@ -55,13 +57,13 @@ export function ResultScreen() {
       <div className="flex w-full max-w-sm flex-col gap-3">
         {isHost ? (
           <button onClick={restart} className="btn-primary w-full">
-            Rematch
+            {t("result.rematch")}
           </button>
         ) : (
-          <p className="text-sm text-slate-400">Waiting for the host to start a rematch…</p>
+          <p className="text-sm text-slate-400">{t("result.waitingHost")}</p>
         )}
         <button onClick={goHome} className="btn-secondary w-full">
-          Back to home
+          {t("result.backHome")}
         </button>
       </div>
     </div>
