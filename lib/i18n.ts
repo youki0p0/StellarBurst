@@ -176,6 +176,16 @@ const DICT: Record<string, Entry> = {
   "kind.defense": { ja: "防", en: "DEF" },
   "kind.special": { ja: "特", en: "SPC" },
 
+  // Damage unit shown beside an attack card's number
+  "card.dmg": { ja: "減光", en: "DMG" },
+
+  // Attack target labels (shown as a badge on attack cards)
+  "target.next": { ja: "隣", en: "Next" },
+  "target.prev": { ja: "逆隣", en: "Prev" },
+  "target.random": { ja: "ランダム", en: "Random" },
+  "target.all": { ja: "全体", en: "All" },
+  "target.choose": { ja: "指定", en: "Pick" },
+
   // STELLA finishing call
   "common.burst": { ja: "危険", en: "LOW" },
   "stella.toggle": { ja: "STELLAコール（トドメ宣言）", en: "STELLA call (declare a finish)" },
@@ -255,25 +265,26 @@ const SPECIAL_TEXT: Record<string, Entry> = {
   slip_damage: { ja: "次の星を流星侵食（3ターン減光）。", en: "Meteor decay: the next star loses light for 3 turns." },
 };
 
+// Kept short so they fit a card on one line.
 const CARD_NAME: Record<string, Entry> = {
   // Flares (attacks)
   "cardname.supernova": { ja: "超新星", en: "Supernova" },
-  "cardname.meteorshower": { ja: "流星群", en: "Meteor Shower" },
-  "cardname.meteorshot": { ja: "メテオショット", en: "Meteor Shot" },
-  "cardname.solar": { ja: "ソーラーフレア", en: "Solar Flare" },
-  "cardname.redgiant": { ja: "赤色巨星", en: "Red Giant Burst" },
-  "cardname.comet": { ja: "ブルーコメット", en: "Blue Comet" },
-  "cardname.aurora": { ja: "グリーンオーロラ", en: "Green Aurora" },
+  "cardname.meteorshower": { ja: "流星群", en: "Meteors" },
+  "cardname.meteorshot": { ja: "メテオ", en: "Meteor" },
+  "cardname.solar": { ja: "フレア", en: "Flare" },
+  "cardname.redgiant": { ja: "赤色巨星", en: "Red Giant" },
+  "cardname.comet": { ja: "コメット", en: "Comet" },
+  "cardname.aurora": { ja: "オーロラ", en: "Aurora" },
   // Shields (defense)
-  "cardname.starshield": { ja: "星盾", en: "Star Shield" },
-  "cardname.mirrororbit": { ja: "重力反射", en: "Mirror Orbit" },
-  "cardname.gravitypass": { ja: "軌道流し", en: "Gravity Pass" },
+  "cardname.starshield": { ja: "星盾", en: "Shield" },
+  "cardname.mirrororbit": { ja: "重力反射", en: "Mirror" },
+  "cardname.gravitypass": { ja: "軌道流し", en: "Pass" },
   // Specials
-  "cardname.rekindle": { ja: "星核再燃", en: "Core Rekindle" },
-  "cardname.nebula": { ja: "星雲シャッフル", en: "Nebula Shuffle" },
+  "cardname.rekindle": { ja: "再点火", en: "Rekindle" },
+  "cardname.nebula": { ja: "星雲嵐", en: "Nebula" },
   "cardname.eclipse": { ja: "日食", en: "Eclipse" },
   "cardname.retrograde": { ja: "逆行", en: "Retrograde" },
-  "cardname.decay": { ja: "流星侵食", en: "Meteor Decay" },
+  "cardname.decay": { ja: "流星侵食", en: "Decay" },
 };
 
 /** Stable i18n key for a card's name, derived from its attributes. */
