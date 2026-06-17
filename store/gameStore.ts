@@ -10,6 +10,7 @@ import {
   leaveRoomRow,
   loadRoomState,
   persistState,
+  pokeRoom,
   setReadyRow,
   subscribeRoom,
   unsubscribeRoom,
@@ -135,6 +136,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         if (ok) {
           const me = next.players.find((p) => p.id === myPlayerId);
           set({ roomState: next, isHost: Boolean(me?.isHost) });
+          pokeRoom(channel); // tell everyone else to reload now
           maybeRunCpu(next);
           return;
         }
@@ -239,6 +241,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       channel = subscribeRoom(roomId, scheduleReload);
       startPolling();
       await reload();
+      pokeRoom(channel); // notify the host (and others) that we joined
       set({ connecting: false });
       return true;
     },
@@ -283,8 +286,11 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     leaveRoom: () => {
       const { roomState } = get();
+      const ch = channel;
       // Only vacate the seat while still in the lobby.
-      if (roomState?.phase === "lobby" && myPlayerId) void leaveRoomRow(myPlayerId);
+      if (roomState?.phase === "lobby" && myPlayerId) {
+        void leaveRoomRow(myPlayerId).then(() => pokeRoom(ch));
+      }
       teardown();
       set({ roomState: null, isHost: false, error: null });
     },
@@ -293,7 +299,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       const { roomState } = get();
       const me = roomState?.players.find((p) => p.id === myPlayerId);
       if (!me) return;
-      void setReadyRow(me.id, !me.isReady);
+      void setReadyRow(me.id, !me.isReady).then(() => pokeRoom(channel));
     },
 
     addCpu: () => void applyAndPersist((s) => addCpuPlayer(s)),
