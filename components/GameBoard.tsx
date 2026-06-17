@@ -376,6 +376,7 @@ export function GameBoard() {
                 card={c}
                 selected={c.id === selectedCardId}
                 disabled={!isMyTurn}
+                direction={roomState.direction}
                 onClick={() => handleCardTap(c)}
               />
             ))}
