@@ -9,13 +9,21 @@ export function SetupScreen() {
         </p>
         <pre className="mb-4 overflow-x-auto rounded-xl bg-board-900 p-4 text-left text-sm text-neon-cyan">
 {`NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...`}
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...`}
         </pre>
-        <p className="text-sm text-slate-400">
+        <p className="mb-3 text-sm text-slate-400">
           Create a free project at{" "}
-          <span className="text-neon-pink">supabase.com</span>, copy the values
-          from Project Settings → API into a <code>.env.local</code> file (see{" "}
-          <code>.env.example</code>), then restart. No database tables required.
+          <span className="text-neon-pink">supabase.com</span> and copy these from
+          Project Settings → API (use the browser-safe{" "}
+          <code>publishable</code> key — never a service&nbsp;role / secret key).
+        </p>
+        <p className="text-sm text-slate-400">
+          <span className="font-semibold text-slate-200">Local:</span> put them in{" "}
+          <code>.env.local</code> (see <code>.env.example</code>) and restart.{" "}
+          <span className="font-semibold text-slate-200">Vercel:</span> add them in
+          Project&nbsp;Settings → Environment&nbsp;Variables (Production / Preview /
+          Development) and redeploy. Then run <code>supabase/schema.sql</code> once
+          in the Supabase SQL editor to create the tables.
         </p>
       </div>
     </div>
