@@ -124,14 +124,27 @@ export const useGameStore = create<GameStore>((set, get) => {
    * we reload the latest state and retry a few times.
    */
   async function applyAndPersist(transform: (s: RoomState) => RoomState) {
-    if (!roomId || applying) return;
+    if (!roomId || applying) {
+      console.warn("[StellarBurst] write skipped", { hasRoom: !!roomId, applying });
+      return;
+    }
     applying = true;
     try {
       for (let attempt = 0; attempt < 4; attempt++) {
         const base = get().roomState;
         if (!base) return;
         const next = transform(base);
-        if (next.version === base.version) return; // no-op / illegal action
+        if (next.version === base.version) {
+          // The reducer rejected the action (e.g. startGame needs 2+ players,
+          // or it isn't this client's turn). No DB write is attempted.
+          console.warn("[StellarBurst] action had no effect", {
+            phase: base.phase,
+            players: base.players.length,
+            isHost: get().isHost,
+            myPlayerId,
+          });
+          return;
+        }
         const ok = await persistState(roomId, base, next);
         if (ok) {
           const me = next.players.find((p) => p.id === myPlayerId);
