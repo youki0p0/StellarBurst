@@ -174,26 +174,27 @@ describe("STELLA finishing call", () => {
     return { id, kind: "attack", color: "colorless", name: "", description: "", damage: dmg, attackTarget: "choose" };
   }
 
-  it("lets the targeted star point out to escape: nullify + caller penalty", () => {
+  it("does not let the targeted star escape by pointing out — it must defend or take it", () => {
     let s = freshGame();
     const attackerId = currentPlayerId(s)!;
     const target = s.players.find((p) => p.id !== attackerId && p.alive)!;
+    target.hp = 30;
     s.hands[attackerId] = [chooseAtk("k1", 30), ...s.hands[attackerId]];
-    const tHpBefore = target.hp;
-    const aHpBefore = s.players.find((p) => p.id === attackerId)!.hp;
+    s.hands[target.id] = []; // no shields
 
     s = applyAction(s, { type: "play_attack", cardId: "k1", targetId: target.id, stella: true }, attackerId);
     expect(s.phase).toBe("stella");
-    expect(s.stella?.targetId).toBe(target.id);
 
-    s = applyAction(s, { type: "call_out" }, target.id);
+    // The target "points out" — ignored, the window is unchanged.
+    const before = s.version;
+    const noop = applyAction(s, { type: "call_out" }, target.id);
+    expect(noop.version).toBe(before);
+    expect(noop.phase).toBe("stella");
 
+    // It can only defend or take the hit — with no shield it darkens.
+    s = applyAction(s, { type: "defend", cardId: null }, target.id);
     const after = s.players.find((p) => p.id === target.id)!;
-    const atk = s.players.find((p) => p.id === attackerId)!;
-    expect(s.phase).not.toBe("stella");
-    expect(after.alive).toBe(true);
-    expect(after.hp).toBeGreaterThanOrEqual(tHpBefore); // nullified (+ maybe a heal buff)
-    expect(atk.hp).toBe(aHpBefore - 10); // caller failed the finish
+    expect(after.alive).toBe(false);
   });
 
   it("penalises a bystander who points out a bluff (−10), plus the caller", () => {
