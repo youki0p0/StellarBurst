@@ -12,6 +12,7 @@ export default function HomePage() {
   const setName = useGameStore((s) => s.setName);
   const createRoom = useGameStore((s) => s.createRoom);
   const joinRoom = useGameStore((s) => s.joinRoom);
+  const startSolo = useGameStore((s) => s.startSolo);
   const error = useGameStore((s) => s.error);
 
   const [name, setLocalName] = useState("");
@@ -31,6 +32,15 @@ export default function HomePage() {
     setBusy(true);
     setName(trimmed);
     const roomCode = await createRoom();
+    if (roomCode) router.push(`/room/${roomCode}`);
+    else setBusy(false);
+  };
+
+  const handleSolo = async () => {
+    if (!trimmed || busy) return;
+    setBusy(true);
+    setName(trimmed);
+    const roomCode = await startSolo(3);
     if (roomCode) router.push(`/room/${roomCode}`);
     else setBusy(false);
   };
@@ -68,6 +78,14 @@ export default function HomePage() {
 
         <button onClick={handleCreate} disabled={!trimmed || busy} className="btn-primary w-full">
           Create room
+        </button>
+
+        <button
+          onClick={handleSolo}
+          disabled={!trimmed || busy}
+          className="btn-secondary w-full"
+        >
+          Solo vs 3 CPUs (practice)
         </button>
 
         <div className="flex items-center gap-3 py-1 text-xs text-slate-500">
