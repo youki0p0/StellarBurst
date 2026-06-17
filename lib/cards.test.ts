@@ -30,8 +30,8 @@ describe("drawCard", () => {
       expect(["attack", "defense", "special"]).toContain(c.kind);
       expect(["colorless", "red", "blue", "green"]).toContain(c.color);
       if (c.kind === "attack" && !c.fatal) {
-        // AOE flares hit for less (5..10); single-target flares 10..25.
-        const lo = c.attackTarget === "all" ? 5 : 10;
+        // AOE flares hit for less; single-target/chain flares are larger.
+        const lo = c.attackTarget === "all" ? 4 : 8;
         expect(c.damage!).toBeGreaterThanOrEqual(lo);
         expect(c.damage!).toBeLessThanOrEqual(30);
       }

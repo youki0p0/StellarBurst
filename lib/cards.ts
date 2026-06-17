@@ -85,8 +85,12 @@ function makeAttack(rng: () => number): Card {
   );
   const isAoe = target === "all";
   const chain = target === "next" && rng() < 0.2;
-  const fatal = !isAoe && !chain && rng() < 0.06; // rare, never on AOE/chain
-  const damage = isAoe ? 5 + Math.floor(rng() * 6) : 10 + Math.floor(rng() * 16);
+  const fatal = !isAoe && !chain && rng() < 0.05; // rare, never on AOE/chain
+  // Tuned for ~5–10 min games at 100 Luminosity: single-target flares 9–22,
+  // chains a touch softer, AOE small (4–9).
+  const damage = isAoe
+    ? 4 + Math.floor(rng() * 6)
+    : (chain ? 8 : 9) + Math.floor(rng() * (chain ? 9 : 14));
   return {
     id: nextCardId(),
     kind: "attack",

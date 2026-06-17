@@ -1,15 +1,57 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BattleLog } from "./BattleLog";
 import { CardView } from "./CardView";
-import { PlayerPanel } from "./PlayerPanel";
+import { OrbitBoard } from "./OrbitBoard";
+import { SfxToggle } from "./SfxToggle";
 import { canDefend, canUseDefense } from "@/lib/rules";
 import { currentPlayerId } from "@/lib/room";
 import { useGameStore } from "@/store/gameStore";
 import { useLangStore, useT } from "@/store/i18n";
 import { localizeCardName } from "@/lib/i18n";
-import type { Card } from "@/lib/types";
+import { playSfx, type SfxName } from "@/lib/sfx";
+import type { Card, GameEvent } from "@/lib/types";
+
+/** Map a battle-log event to an optional sound + star flash. */
+function effectFor(
+  e: GameEvent,
+): { sfx?: SfxName; flash?: { id: string; kind: "hit" | "reflect" | "heal" | "super" } } {
+  const target = e.targetId;
+  switch (e.key) {
+    case "log.attackFatal":
+      return { sfx: "flare", flash: target ? { id: target, kind: "super" } : undefined };
+    case "log.attack":
+    case "log.takeDamage":
+      return { sfx: "flare", flash: target ? { id: target, kind: "hit" } : undefined };
+    case "log.aoe":
+      return { sfx: "flare" };
+    case "log.chain":
+      return { sfx: "chain", flash: target ? { id: target, kind: "hit" } : undefined };
+    case "log.reflect":
+      return { sfx: "reflect", flash: target ? { id: target, kind: "reflect" } : undefined };
+    case "log.negate":
+      return { sfx: "reflect" };
+    case "log.passAttack":
+      return { sfx: "chain" };
+    case "log.heal":
+      return { sfx: "heal", flash: e.actorId ? { id: e.actorId, kind: "heal" } : undefined };
+    case "log.reverse":
+    case "log.shuffle":
+      return { sfx: "reverse" };
+    case "log.skipOk":
+    case "log.skipped":
+      return { sfx: "eclipse" };
+    case "log.stella":
+      return { sfx: "stella" };
+    case "log.calledOut":
+      return { sfx: "callout", flash: target ? { id: target, kind: "hit" } : undefined };
+    case "log.eliminate":
+      return { sfx: "darken" };
+    default:
+      return {};
+  }
+}
 
 // Only rare free-pick flares need a chosen target; everything else is
 // flow-based (the reducer resolves next/prev/random/all) or self/global.
@@ -24,6 +66,38 @@ export function GameBoard() {
   const identity = useGameStore((s) => s.identity);
   const sendGameAction = useGameStore((s) => s.sendGameAction);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [flash, setFlash] = useState<
+    { id: string; kind: "hit" | "reflect" | "heal" | "super" } | null
+  >(null);
+  const lastEventId = useRef<string | null>(null);
+
+  // React to fresh battle-log events with sound + a star flash.
+  useEffect(() => {
+    const log = roomState.log;
+    if (log.length === 0) return;
+    let start = log.length;
+    if (lastEventId.current) {
+      const i = log.findIndex((e) => e.id === lastEventId.current);
+      if (i === -1) {
+        // ids were swapped (optimistic → reload). Resync without replaying.
+        lastEventId.current = log[log.length - 1].id;
+        return;
+      }
+      start = i + 1;
+    }
+    lastEventId.current = log[log.length - 1].id;
+    let latestFlash: typeof flash = null;
+    for (const e of log.slice(start)) {
+      const fx = effectFor(e);
+      if (fx.sfx) playSfx(fx.sfx);
+      if (fx.flash) latestFlash = fx.flash;
+    }
+    if (latestFlash) {
+      setFlash(latestFlash);
+      const id = setTimeout(() => setFlash(null), 650);
+      return () => clearTimeout(id);
+    }
+  }, [roomState.log]);
 
   const me = roomState.players.find((p) => p.clientId === identity.id);
   const myId = me?.id ?? "";
@@ -99,14 +173,17 @@ export function GameBoard() {
             {isMyTurn && <span className="ml-2 text-neon-gold">— {t("game.yourMove")}</span>}
           </div>
         </div>
-        <div className="text-right text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-right text-xs text-slate-400">
           <div>
-            {t("game.orbit")}{" "}
-            <span className="font-bold text-neon-cyan">
-              {roomState.direction === 1 ? "↻" : "↺"}
-            </span>
+            <div>
+              {t("game.orbit")}{" "}
+              <span className="font-bold text-neon-cyan">
+                {roomState.direction === 1 ? "↻" : "↺"}
+              </span>
+            </div>
+            {t("game.room")} <span className="font-bold text-neon-gold">{roomState.code}</span>
           </div>
-          {t("game.room")} <span className="font-bold text-neon-gold">{roomState.code}</span>
+          <SfxToggle />
         </div>
       </div>
 
@@ -130,21 +207,21 @@ export function GameBoard() {
         </button>
       )}
 
-      {/* Player panels */}
-      <div className="grid grid-cols-2 gap-2">
-        {roomState.players.map((p) => (
-          <PlayerPanel
-            key={p.id}
-            player={p}
-            isSelf={p.id === myId}
-            isCurrent={p.id === turnId}
-            handCount={roomState.hands[p.id]?.length}
-            selectable={targetingMode && p.id !== myId}
-            selected={false}
-            onSelect={() => playCard(p.id)}
-          />
-        ))}
-      </div>
+      {/* Orbit board: stars on the ring */}
+      <OrbitBoard
+        players={roomState.players}
+        turnId={turnId}
+        direction={roomState.direction}
+        selfClientId={identity.id}
+        selectableIds={
+          targetingMode
+            ? opponents.filter((p) => p.alive).map((p) => p.id)
+            : []
+        }
+        selectedId={null}
+        onSelect={(id) => playCard(id)}
+        flash={flash}
+      />
 
       <BattleLog log={roomState.log} />
 

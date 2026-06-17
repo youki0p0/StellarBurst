@@ -87,11 +87,12 @@ const DICT: Record<string, Entry> = {
   "game.nextPlayer": { ja: "次のプレイヤー", en: "the next player" },
 
   // Result
-  "result.gameOver": { ja: "ゲーム終了", en: "Game over" },
-  "result.wins": { ja: "の勝利！", en: " wins!" },
-  "result.youStanding": { ja: "あなたが最後まで生き残りました。", en: "You are the last one standing." },
-  "result.betterLuck": { ja: "次のバーストで巻き返そう。", en: "Better luck next burst." },
-  "result.standings": { ja: "最終結果", en: "Final standings" },
+  "result.gameOver": { ja: "全ての星が暗転…", en: "All stars darkened…" },
+  "result.wins": { ja: " が最後の星！", en: " is the Last Star!" },
+  "result.youStanding": { ja: "あなたの光だけが残った。", en: "Yours is the only light left." },
+  "result.betterLuck": { ja: "次の軌道で輝き返そう。", en: "Shine brighter next orbit." },
+  "result.standings": { ja: "最終輝度", en: "Final luminosity" },
+  "result.lum": { ja: "輝度", en: "Lum" },
   "result.rematch": { ja: "再戦", en: "Rematch" },
   "result.waitingHost": { ja: "ホストの再戦開始を待っています…", en: "Waiting for the host to start a rematch…" },
   "result.backHome": { ja: "ホームに戻る", en: "Back to home" },
