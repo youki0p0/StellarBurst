@@ -56,7 +56,11 @@ interface EventRow {
   id: number;
   player_id: string | null;
   event_type: GameEvent["type"];
-  payload: { message?: string; targetId?: string | null } | null;
+  payload: {
+    key?: string;
+    params?: Record<string, string | number>;
+    targetId?: string | null;
+  } | null;
   created_at: string;
 }
 
@@ -102,7 +106,8 @@ function rowToEvent(row: EventRow): GameEvent {
     id: String(row.id),
     ts: new Date(row.created_at).getTime(),
     type: row.event_type,
-    message: row.payload?.message ?? "",
+    key: row.payload?.key ?? "log.info",
+    params: row.payload?.params ?? {},
     actorId: row.player_id ?? undefined,
     targetId: row.payload?.targetId ?? undefined,
   };
@@ -191,7 +196,10 @@ export async function createRoomRow(
     state: { phase: "lobby", turnOrder: [], currentTurnIndex: 0, pending: null },
     version: 0,
   });
-  if (roomErr) return null;
+  if (roomErr) {
+    console.error("[StellarBurst] createRoom rooms.insert failed:", roomErr.message);
+    return null;
+  }
 
   const { error: playerErr } = await supabase.from("players").insert({
     id: playerId,
@@ -205,7 +213,10 @@ export async function createRoomRow(
     is_cpu: false,
     effects: {},
   });
-  if (playerErr) return null;
+  if (playerErr) {
+    console.error("[StellarBurst] createRoom players.insert failed:", playerErr.message);
+    return null;
+  }
 
   return { roomId, playerId };
 }
@@ -265,7 +276,7 @@ export async function createStartedRoomRow(
         room_id: roomId,
         player_id: e.actorId ?? null,
         event_type: e.type,
-        payload: { message: e.message, targetId: e.targetId ?? null },
+        payload: { key: e.key, params: e.params ?? {}, targetId: e.targetId ?? null },
       })),
     );
   }
@@ -287,11 +298,14 @@ export async function joinRoomRow(
   const supabase = getSupabase();
   if (!supabase) return { ok: false, error: "not_configured" };
 
-  const { data: roomData } = await supabase
+  const { data: roomData, error: selErr } = await supabase
     .from("rooms")
     .select("id,status")
     .eq("code", code)
     .maybeSingle();
+  if (selErr) {
+    console.error("[StellarBurst] join rooms.select failed:", selErr.message);
+  }
   const room = roomData as { id: string; status: RoomRow["status"] } | null;
   if (!room) return { ok: false, error: "not_found" };
 
@@ -325,7 +339,10 @@ export async function joinRoomRow(
     is_cpu: false,
     effects: {},
   });
-  if (error) return { ok: false, roomId: room.id, error: "join_failed" };
+  if (error) {
+    console.error("[StellarBurst] join players.insert failed:", error.message);
+    return { ok: false, roomId: room.id, error: "join_failed" };
+  }
 
   return { ok: true, roomId: room.id, playerId };
 }
@@ -376,7 +393,28 @@ export async function persistState(
     .eq("version", expected)
     .select("id");
 
-  if (error || !data || data.length === 0) return false; // conflict / failure
+  if (error) {
+    // A real error here is almost always RLS/permissions on rooms UPDATE.
+    console.error("[StellarBurst] rooms.update failed:", error.message);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    // 0 rows: either a version race (another writer won) or an RLS policy that
+    // silently allows 0 rows to be updated. Probe the current version to tell.
+    const { data: probe } = await supabase
+      .from("rooms")
+      .select("version")
+      .eq("id", roomId)
+      .maybeSingle();
+    const live = (probe as { version?: number } | null)?.version;
+    if (live === expected) {
+      console.error(
+        "[StellarBurst] rooms.update affected 0 rows but version is unchanged — " +
+          "the UPDATE is being blocked (RLS/grants). Re-run supabase/schema.sql.",
+      );
+    }
+    return false; // conflict / blocked
+  }
 
   // Upsert all current players.
   const rows = next.players.map((p) => ({
@@ -393,14 +431,13 @@ export async function persistState(
   }));
   await supabase.from("players").upsert(rows, { onConflict: "room_id,client_id" });
 
-  // Drop players no longer present (e.g. CPUs removed on rematch).
-  const keepIds = next.players.map((p) => p.id);
-  if (keepIds.length > 0) {
-    await supabase
-      .from("players")
-      .delete()
-      .eq("room_id", roomId)
-      .not("id", "in", `(${keepIds.join(",")})`);
+  // Delete only players intentionally removed (rematch/leave), found by diffing
+  // against the previous state — never a blanket "delete everything not kept".
+  const removedIds = prev.players
+    .filter((p) => !next.players.some((n) => n.id === p.id))
+    .map((p) => p.id);
+  if (removedIds.length > 0) {
+    await supabase.from("players").delete().in("id", removedIds);
   }
 
   // Append newly-created battle-log events (reducer ids look like "e123").
@@ -412,7 +449,7 @@ export async function persistState(
         room_id: roomId,
         player_id: e.actorId ?? null,
         event_type: e.type,
-        payload: { message: e.message, targetId: e.targetId ?? null },
+        payload: { key: e.key, params: e.params ?? {}, targetId: e.targetId ?? null },
       })),
     );
   }

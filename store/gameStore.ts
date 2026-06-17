@@ -142,6 +142,14 @@ export const useGameStore = create<GameStore>((set, get) => {
         }
         await reload(); // conflict: refresh and retry
       }
+      // All attempts failed. This is almost always a Supabase permissions/RLS
+      // problem on the rooms UPDATE (e.g. schema.sql not fully applied), since
+      // a real version race would resolve within a few retries.
+      console.error(
+        "[StellarBurst] Could not persist game state after retries. " +
+          "Check the rooms UPDATE RLS policy / grants and re-run supabase/schema.sql.",
+      );
+      set({ error: "error.persist_failed" });
     } finally {
       applying = false;
     }

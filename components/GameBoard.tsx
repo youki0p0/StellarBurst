@@ -7,7 +7,8 @@ import { PlayerPanel } from "./PlayerPanel";
 import { canDefend, canUseDefense } from "@/lib/rules";
 import { currentPlayerId } from "@/lib/room";
 import { useGameStore } from "@/store/gameStore";
-import { useT } from "@/store/i18n";
+import { useLangStore, useT } from "@/store/i18n";
+import { localizeCardName } from "@/lib/i18n";
 import type { Card } from "@/lib/types";
 
 function needsTarget(card: Card): boolean {
@@ -24,6 +25,7 @@ function needsTarget(card: Card): boolean {
 
 export function GameBoard() {
   const t = useT();
+  const lang = useLangStore((s) => s.lang);
   const roomState = useGameStore((s) => s.roomState)!;
   const identity = useGameStore((s) => s.identity);
   const sendGameAction = useGameStore((s) => s.sendGameAction);
@@ -116,7 +118,7 @@ export function GameBoard() {
         <div className="panel border-neon-pink/60 p-3">
           <div className="mb-2 text-sm font-bold text-neon-pink">
             {t("game.incoming")} {pending.card.fatal ? `${t("game.fatal")} ` : ""}
-            {pending.card.name}
+            {localizeCardName(pending.card, lang)}
             {!pending.card.fatal && ` (${pending.card.damage})`} — {t("game.defendQ")}
           </div>
           {!canUseDefense(me!) && (
@@ -165,7 +167,7 @@ export function GameBoard() {
           <div className="flex gap-2">
             {selectedCard && !needsTarget(selectedCard) && (
               <button onClick={() => playCard()} className="btn-primary flex-1">
-                {t("game.play")} {selectedCard.name}
+                {t("game.play")} {localizeCardName(selectedCard, lang)}
               </button>
             )}
             {selectedCard && (

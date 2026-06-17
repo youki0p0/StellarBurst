@@ -1,7 +1,7 @@
 "use client";
 
 import type { Card, CardColor } from "@/lib/types";
-import { localizeCardDescription } from "@/lib/i18n";
+import { localizeCardDescription, localizeCardName } from "@/lib/i18n";
 import { useLangStore, useT } from "@/store/i18n";
 import { CardArt } from "./CardArt";
 
@@ -70,7 +70,7 @@ export function CardView({
             card.fatal ? "text-neon-pink" : "text-white",
           ].join(" ")}
         >
-          {card.name}
+          {localizeCardName(card, lang)}
         </div>
         {card.kind === "attack" && !card.fatal && (
           <div className="text-lg font-black text-neon-gold">{card.damage}</div>
