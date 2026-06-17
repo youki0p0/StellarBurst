@@ -84,14 +84,17 @@ export function GameBoard() {
   >(null);
   const lastEventId = useRef<string | null>(null);
 
-  // Fit the orbit board to whatever space is left so the whole game stays on
-  // one screen on any iPhone — the board shrinks/grows to the leftover area.
+  // Size the orbit board to the leftover space so the game stays on one screen,
+  // but cap it small: the star ring is the lowest-information area, so it never
+  // needs to dominate. It still shrinks below the cap on short screens.
+  const BOARD_CAP = 184; // px
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const [boardSize, setBoardSize] = useState(0);
   useEffect(() => {
     const el = boardWrapRef.current;
     if (!el) return;
-    const measure = () => setBoardSize(Math.floor(Math.min(el.clientWidth, el.clientHeight)));
+    const measure = () =>
+      setBoardSize(Math.min(BOARD_CAP, Math.floor(Math.min(el.clientWidth, el.clientHeight))));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
