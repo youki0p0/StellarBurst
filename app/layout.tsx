@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-full">
         <LangInit />
-        <main className="safe-area mx-auto flex min-h-screen w-full max-w-2xl flex-col">
+        <main className="safe-area mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col">
           {children}
         </main>
       </body>
