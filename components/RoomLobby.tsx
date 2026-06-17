@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { LangToggle } from "@/components/LangToggle";
 import { useGameStore } from "@/store/gameStore";
+import { useT } from "@/store/i18n";
 import { MAX_PLAYERS } from "@/lib/room";
 
 export function RoomLobby() {
+  const t = useT();
   const roomState = useGameStore((s) => s.roomState);
   const identity = useGameStore((s) => s.identity);
   const isHost = useGameStore((s) => s.isHost);
@@ -32,8 +35,13 @@ export function RoomLobby() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
+      <div className="flex justify-end">
+        <LangToggle />
+      </div>
       <div className="panel p-4 text-center">
-        <div className="text-xs uppercase tracking-widest text-slate-400">Room code</div>
+        <div className="text-xs uppercase tracking-widest text-slate-400">
+          {t("lobby.roomCode")}
+        </div>
         <button
           onClick={copyCode}
           className="mt-1 text-5xl font-black tracking-[0.3em] text-neon-gold"
@@ -41,13 +49,13 @@ export function RoomLobby() {
           {roomState.code}
         </button>
         <div className="mt-1 text-sm text-slate-400">
-          {copied ? "Copied!" : "Tap code to copy · share it with friends"}
+          {copied ? t("lobby.copied") : t("lobby.tapToCopy")}
         </div>
       </div>
 
       <div className="panel flex-1 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-bold">Players</h2>
+          <h2 className="font-bold">{t("lobby.players")}</h2>
           <span className="text-sm text-slate-400">
             {roomState.players.length}/{MAX_PLAYERS}
           </span>
@@ -60,13 +68,15 @@ export function RoomLobby() {
             >
               <span className="flex items-center gap-2">
                 <span className="font-semibold">{p.name}</span>
-                {p.isHost && <span className="text-xs text-neon-cyan">host</span>}
+                {p.isHost && <span className="text-xs text-neon-cyan">{t("common.host")}</span>}
                 {p.isCPU && (
                   <span className="rounded bg-board-600 px-1.5 py-0.5 text-[10px] font-bold">
-                    CPU
+                    {t("common.cpu")}
                   </span>
                 )}
-                {p.clientId === identity.id && <span className="text-xs text-slate-400">you</span>}
+                {p.clientId === identity.id && (
+                  <span className="text-xs text-slate-400">{t("common.you")}</span>
+                )}
               </span>
               {isHost && p.isCPU ? (
                 <button
@@ -82,7 +92,7 @@ export function RoomLobby() {
                     p.isReady ? "text-sm font-bold text-card-green" : "text-sm text-slate-500"
                   }
                 >
-                  {p.isReady ? "READY" : "…"}
+                  {p.isReady ? t("lobby.ready") : "…"}
                 </span>
               )}
             </li>
@@ -95,7 +105,7 @@ export function RoomLobby() {
             disabled={roomFull}
             className="btn-secondary mt-3 w-full"
           >
-            + Add CPU opponent
+            {t("lobby.addCpu")}
           </button>
         )}
       </div>
@@ -103,20 +113,15 @@ export function RoomLobby() {
       <div className="space-y-3">
         {!isHost && (
           <button onClick={toggleReady} className="btn-primary w-full">
-            {me?.isReady ? "Not ready" : "I'm ready!"}
+            {me?.isReady ? t("lobby.notReady") : t("lobby.imReady")}
           </button>
         )}
         {isHost && (
           <>
             <button onClick={startMatch} disabled={!canStart} className="btn-primary w-full">
-              {roomState.players.length < 2
-                ? "Add an opponent (or CPU) to start"
-                : "Start battle"}
+              {roomState.players.length < 2 ? t("lobby.needOpponent") : t("lobby.startBattle")}
             </button>
-            <p className="text-center text-xs text-slate-500">
-              The host can start anytime once there are 2+ players. Play solo by
-              adding CPUs, or share the code with friends.
-            </p>
+            <p className="text-center text-xs text-slate-500">{t("lobby.hint")}</p>
           </>
         )}
       </div>

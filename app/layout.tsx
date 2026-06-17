@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { LangInit } from "@/components/LangInit";
 
 export const metadata: Metadata = {
   title: "StellarBurst — Card Battle Party",
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-full">
+        <LangInit />
         <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-5">
           {children}
         </main>

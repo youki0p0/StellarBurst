@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LangToggle } from "@/components/LangToggle";
 import { SetupScreen } from "@/components/SetupScreen";
 import { useGameStore } from "@/store/gameStore";
+import { useT } from "@/store/i18n";
 
 export default function HomePage() {
   const router = useRouter();
+  const t = useT();
   const configured = useGameStore((s) => s.configured);
   const identity = useGameStore((s) => s.identity);
   const setName = useGameStore((s) => s.setName);
@@ -57,27 +60,30 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-1 flex-col justify-center gap-6">
+      <div className="flex justify-end">
+        <LangToggle />
+      </div>
       <header className="text-center">
         <h1 className="bg-gradient-to-r from-neon-purple via-neon-pink to-neon-cyan bg-clip-text text-5xl font-black tracking-tight text-transparent">
           StellarBurst
         </h1>
-        <p className="mt-2 text-slate-400">
-          A fast, chaotic 2–8 player card battle party game.
-        </p>
+        <p className="mt-2 text-slate-400">{t("home.tagline")}</p>
       </header>
 
       <div className="panel space-y-3 p-5">
-        <label className="block text-sm font-semibold text-slate-300">Your name</label>
+        <label className="block text-sm font-semibold text-slate-300">
+          {t("home.yourName")}
+        </label>
         <input
           className="input"
           value={name}
           onChange={(e) => setLocalName(e.target.value.slice(0, 16))}
-          placeholder="Enter a name"
+          placeholder={t("home.namePlaceholder")}
           maxLength={16}
         />
 
         <button onClick={handleCreate} disabled={!trimmed || busy} className="btn-primary w-full">
-          Create room
+          {t("home.createRoom")}
         </button>
 
         <button
@@ -85,12 +91,12 @@ export default function HomePage() {
           disabled={!trimmed || busy}
           className="btn-secondary w-full"
         >
-          Solo vs 3 CPUs (practice)
+          {t("home.solo")}
         </button>
 
         <div className="flex items-center gap-3 py-1 text-xs text-slate-500">
           <span className="h-px flex-1 bg-board-600" />
-          OR JOIN
+          {t("home.orJoin")}
           <span className="h-px flex-1 bg-board-600" />
         </div>
 
@@ -99,7 +105,7 @@ export default function HomePage() {
             className="input flex-1 uppercase tracking-[0.3em]"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))}
-            placeholder="CODE"
+            placeholder={t("home.codePlaceholder")}
             maxLength={4}
           />
           <button
@@ -107,16 +113,14 @@ export default function HomePage() {
             disabled={!trimmed || code.trim().length < 4 || busy}
             className="btn-secondary"
           >
-            Join
+            {t("home.join")}
           </button>
         </div>
 
-        {error && <p className="text-center text-sm text-card-red">{error}</p>}
+        {error && <p className="text-center text-sm text-card-red">{t(error)}</p>}
       </div>
 
-      <p className="text-center text-xs text-slate-600">
-        Inspired by simple party card games. No copyrighted assets.
-      </p>
+      <p className="text-center text-xs text-slate-600">{t("home.footer")}</p>
     </div>
   );
 }

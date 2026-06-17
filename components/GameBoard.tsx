@@ -7,6 +7,7 @@ import { PlayerPanel } from "./PlayerPanel";
 import { canDefend, canUseDefense } from "@/lib/rules";
 import { currentPlayerId } from "@/lib/room";
 import { useGameStore } from "@/store/gameStore";
+import { useT } from "@/store/i18n";
 import type { Card } from "@/lib/types";
 
 function needsTarget(card: Card): boolean {
@@ -22,6 +23,7 @@ function needsTarget(card: Card): boolean {
 }
 
 export function GameBoard() {
+  const t = useT();
   const roomState = useGameStore((s) => s.roomState)!;
   const identity = useGameStore((s) => s.identity);
   const sendGameAction = useGameStore((s) => s.sendGameAction);
@@ -78,14 +80,16 @@ export function GameBoard() {
       {/* Turn banner */}
       <div className="panel flex items-center justify-between p-3">
         <div>
-          <div className="text-xs uppercase tracking-widest text-slate-400">Current turn</div>
+          <div className="text-xs uppercase tracking-widest text-slate-400">
+            {t("game.currentTurn")}
+          </div>
           <div className="text-lg font-black text-neon-purple">
             {turnPlayer?.name ?? "—"}
-            {isMyTurn && <span className="ml-2 text-neon-gold">— your move!</span>}
+            {isMyTurn && <span className="ml-2 text-neon-gold">— {t("game.yourMove")}</span>}
           </div>
         </div>
         <div className="text-right text-xs text-slate-400">
-          Room <span className="font-bold text-neon-gold">{roomState.code}</span>
+          {t("game.room")} <span className="font-bold text-neon-gold">{roomState.code}</span>
         </div>
       </div>
 
@@ -111,12 +115,12 @@ export function GameBoard() {
       {amDefending && pending && (
         <div className="panel border-neon-pink/60 p-3">
           <div className="mb-2 text-sm font-bold text-neon-pink">
-            Incoming {pending.card.fatal ? "FATAL " : ""}
+            {t("game.incoming")} {pending.card.fatal ? `${t("game.fatal")} ` : ""}
             {pending.card.name}
-            {!pending.card.fatal && ` (${pending.card.damage})`}! Defend?
+            {!pending.card.fatal && ` (${pending.card.damage})`} — {t("game.defendQ")}
           </div>
           {!canUseDefense(me!) && (
-            <p className="mb-2 text-xs text-red-300">Your defense is crippled right now.</p>
+            <p className="mb-2 text-xs text-red-300">{t("game.crippled")}</p>
           )}
           <div className="flex flex-wrap gap-2">
             {defenseOptions.map((c) => (
@@ -132,7 +136,7 @@ export function GameBoard() {
             onClick={() => sendGameAction({ type: "defend", cardId: null })}
             className="btn-secondary mt-3 w-full"
           >
-            Take the hit
+            {t("game.takeHit")}
           </button>
         </div>
       )}
@@ -141,7 +145,7 @@ export function GameBoard() {
       <div className="mt-auto">
         {targetingMode && (
           <div className="mb-2 text-center text-sm font-semibold text-neon-gold">
-            Select a target above
+            {t("game.selectTarget")}
           </div>
         )}
 
@@ -161,12 +165,12 @@ export function GameBoard() {
           <div className="flex gap-2">
             {selectedCard && !needsTarget(selectedCard) && (
               <button onClick={() => playCard()} className="btn-primary flex-1">
-                Play {selectedCard.name}
+                {t("game.play")} {selectedCard.name}
               </button>
             )}
             {selectedCard && (
               <button onClick={() => setSelectedCardId(null)} className="btn-secondary">
-                Cancel
+                {t("game.cancel")}
               </button>
             )}
             {!selectedCard && (
@@ -174,7 +178,7 @@ export function GameBoard() {
                 onClick={() => sendGameAction({ type: "pass" })}
                 className="btn-secondary flex-1"
               >
-                Pass turn
+                {t("game.passTurn")}
               </button>
             )}
           </div>
@@ -182,7 +186,7 @@ export function GameBoard() {
 
         {!isMyTurn && !amDefending && (
           <div className="py-2 text-center text-sm text-slate-400">
-            Waiting for {turnPlayer?.name ?? "the next player"}…
+            {t("game.waitingFor")} {turnPlayer?.name ?? t("game.nextPlayer")}…
           </div>
         )}
       </div>

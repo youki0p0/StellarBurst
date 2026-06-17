@@ -7,6 +7,7 @@ import { ResultScreen } from "@/components/ResultScreen";
 import { RoomLobby } from "@/components/RoomLobby";
 import { SetupScreen } from "@/components/SetupScreen";
 import { useGameStore } from "@/store/gameStore";
+import { useT } from "@/store/i18n";
 
 export default function RoomPage({
   params,
@@ -15,6 +16,7 @@ export default function RoomPage({
 }) {
   const { code } = use(params);
   const router = useRouter();
+  const t = useT();
   const configured = useGameStore((s) => s.configured);
   const roomState = useGameStore((s) => s.roomState);
   const joinRoom = useGameStore((s) => s.joinRoom);
@@ -36,7 +38,7 @@ export default function RoomPage({
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <div className="animate-pulse text-lg text-slate-300">
-          Connecting to room {roomCode}…
+          {t("common.connecting")} {roomCode}…
         </div>
         <button
           onClick={() => {
@@ -45,7 +47,7 @@ export default function RoomPage({
           }}
           className="btn-secondary"
         >
-          Back to home
+          {t("result.backHome")}
         </button>
       </div>
     );

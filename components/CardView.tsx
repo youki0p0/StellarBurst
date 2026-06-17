@@ -1,6 +1,8 @@
 "use client";
 
 import type { Card, CardColor } from "@/lib/types";
+import { localizeCardDescription } from "@/lib/i18n";
+import { useLangStore, useT } from "@/store/i18n";
 import { CardArt } from "./CardArt";
 
 const COLOR_RING: Record<CardColor, string> = {
@@ -17,12 +19,6 @@ const COLOR_DOT: Record<CardColor, string> = {
   green: "bg-card-green",
 };
 
-const KIND_LABEL: Record<Card["kind"], string> = {
-  attack: "ATK",
-  defense: "DEF",
-  special: "SPC",
-};
-
 export function CardView({
   card,
   onClick,
@@ -36,6 +32,8 @@ export function CardView({
   disabled?: boolean;
   compact?: boolean;
 }) {
+  const t = useT();
+  const lang = useLangStore((s) => s.lang);
   const isButton = Boolean(onClick);
   const Tag = isButton ? "button" : "div";
   return (
@@ -55,7 +53,7 @@ export function CardView({
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold tracking-widest text-slate-300">
-          {KIND_LABEL[card.kind]}
+          {t(`kind.${card.kind}`)}
         </span>
         <span className={`h-2.5 w-2.5 rounded-full ${COLOR_DOT[card.color]}`} />
       </div>
@@ -82,7 +80,7 @@ export function CardView({
 
       {!compact && (
         <p className="line-clamp-3 text-[9px] leading-snug text-slate-400">
-          {card.description}
+          {localizeCardDescription(card, lang)}
         </p>
       )}
     </Tag>
