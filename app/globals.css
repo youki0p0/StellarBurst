@@ -24,6 +24,18 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * Safe zone: keep content clear of the notch, status bar, home indicator and
+ * rounded corners on every page. Base padding (px-4 py-5) plus the device's
+ * safe-area insets, so it's never crammed against the edges.
+ */
+.safe-area {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.25rem);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+  padding-left: calc(env(safe-area-inset-left, 0px) + 1rem);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 1rem);
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-xl px-5 py-3 text-base font-semibold
