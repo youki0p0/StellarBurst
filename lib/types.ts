@@ -117,6 +117,8 @@ export interface RoomState {
   currentTurnIndex: number;
   /** Turn-order direction: +1 forward, -1 reversed (UNO Reverse). */
   direction: 1 | -1;
+  /** A Burst (low-luminosity) star that still owes a "STELLA!" call, if any. */
+  stella: { playerId: string } | null;
   /** Per-player hand of cards (keyed by player id). */
   hands: Record<string, Card[]>;
   pending: PendingAttack | null;
@@ -132,4 +134,6 @@ export type GameAction =
   | { type: "play_heal"; cardId: string }
   | { type: "play_special"; cardId: string }
   | { type: "pass" }
-  | { type: "defend"; cardId: string | null };
+  | { type: "defend"; cardId: string | null }
+  | { type: "stella_call" } // a Burst star declares "STELLA!"
+  | { type: "call_out"; targetId: string }; // call out a Burst star who forgot

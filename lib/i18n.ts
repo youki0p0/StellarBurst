@@ -175,6 +175,18 @@ const DICT: Record<string, Entry> = {
   "kind.defense": { ja: "防", en: "DEF" },
   "kind.special": { ja: "特", en: "SPC" },
 
+  // STELLA Call (Burst)
+  "common.burst": { ja: "BURST", en: "BURST" },
+  "stella.declare": { ja: "STELLA！", en: "STELLA!" },
+  "stella.callout": { ja: "STELLA言ってない！", en: "No STELLA!" },
+  "stella.prompt": { ja: "輝度が低い！STELLA！を宣言！", en: "You're Burst — call STELLA!" },
+  "stella.calloutOf": { ja: "{name} はSTELLA言った？", en: "Did {name} call STELLA?" },
+  "log.stella": { ja: "{name} が STELLA！ を宣言！", en: "{name} calls STELLA!" },
+  "log.calledOut": {
+    ja: "{caller} の指摘！{target} はSTELLA言い忘れて {dmg} 減光！",
+    en: "{caller} catches {target} — no STELLA! (−{dmg} light).",
+  },
+
   // Settings
   "settings.language": { ja: "言語", en: "Language" },
 
