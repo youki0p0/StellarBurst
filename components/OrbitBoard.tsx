@@ -42,10 +42,10 @@ export function OrbitBoard(props: OrbitBoardProps) {
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-md">
-      {/* Faint orbit ring */}
+      {/* Faint orbit ring (matches the star radius below) */}
       <div
         className="pointer-events-none absolute rounded-full border border-board-600/60"
-        style={{ left: "8%", top: "8%", width: "84%", height: "84%" }}
+        style={{ left: "13%", top: "13%", width: "74%", height: "74%" }}
         aria-hidden
       />
 
@@ -68,11 +68,14 @@ export function OrbitBoard(props: OrbitBoardProps) {
         </div>
       </div>
 
-      {/* Stars on the orbit */}
+      {/* Stars evenly spaced on the orbit. Two stars sit left/right; everything
+          else fans out from the top (3 → even thirds, 4 → diamond, …). The 37%
+          radius keeps each token fully inside the square on small screens. */}
       {players.map((p, i) => {
-        const angle = (-90 + (i * 360) / n) * (Math.PI / 180);
-        const left = 50 + 42 * Math.cos(angle);
-        const top = 50 + 42 * Math.sin(angle);
+        const startDeg = n === 2 ? 180 : -90;
+        const angle = (startDeg + (i * 360) / n) * (Math.PI / 180);
+        const left = 50 + 37 * Math.cos(angle);
+        const top = 50 + 37 * Math.sin(angle);
 
         const isTurn = turnId !== null && p.id === turnId;
         const isSelf = p.clientId === selfClientId;
@@ -85,7 +88,7 @@ export function OrbitBoard(props: OrbitBoardProps) {
         const hpRatio = p.maxHp > 0 ? Math.max(0, Math.min(1, p.hp / p.maxHp)) : 0;
 
         const tokenClasses = [
-          "relative flex w-[4.75rem] flex-col items-center gap-0.5 rounded-lg border px-1.5 py-1 text-center transition",
+          "relative flex w-[4.25rem] flex-col items-center gap-0.5 rounded-lg border px-1.5 py-1 text-center transition",
           "bg-board-800/90 backdrop-blur-sm",
           dead ? "border-board-700 opacity-40 grayscale" : "border-board-600",
           isTurn ? "ring-2 ring-neon-cyan shadow-neon animate-pulse" : "",
