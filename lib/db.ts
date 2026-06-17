@@ -423,15 +423,24 @@ export async function persistState(
 // --- Realtime subscription -------------------------------------------------
 
 /**
- * Subscribe to all room changes. `onChange` fires whenever rooms, players, or
- * game_events change for this room — the caller should reload the full state.
+ * Subscribe to all room changes. `onChange` fires whenever the room updates.
+ *
+ * Two delivery paths for robustness:
+ *  1. A lightweight Broadcast "sync" message (sent via pokeRoom after each
+ *     write). Broadcast needs no publication/RLS setup, so it works out of the
+ *     box and is the primary, instant path — this is Supabase's recommended
+ *     way to re-stream DB changes to clients.
+ *  2. postgres_changes as a secondary path (works when the tables are on the
+ *     supabase_realtime publication).
+ * A periodic poll in the store is the final safety net.
  */
 export function subscribeRoom(roomId: string, onChange: () => void): RealtimeChannel | null {
   const supabase = getSupabase();
   if (!supabase) return null;
 
   const channel = supabase
-    .channel(`room:${roomId}`)
+    .channel(`room:${roomId}`, { config: { broadcast: { self: false } } })
+    .on("broadcast", { event: "sync" }, () => onChange())
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "rooms", filter: `id=eq.${roomId}` },
@@ -450,6 +459,11 @@ export function subscribeRoom(roomId: string, onChange: () => void): RealtimeCha
     .subscribe();
 
   return channel;
+}
+
+/** Notify other clients in the room to reload now (low-latency broadcast). */
+export function pokeRoom(channel: RealtimeChannel | null): void {
+  channel?.send({ type: "broadcast", event: "sync", payload: {} });
 }
 
 export function unsubscribeRoom(channel: RealtimeChannel | null): void {
