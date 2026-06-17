@@ -62,6 +62,12 @@ const DICT: Record<string, Entry> = {
   "lobby.notReady": { ja: "準備を取り消す", en: "Not ready" },
   "lobby.addCpu": { ja: "＋ CPU を追加", en: "+ Add CPU opponent" },
   "lobby.startBattle": { ja: "バトル開始", en: "Start battle" },
+  "lobby.leave": { ja: "退出する", en: "Leave room" },
+  "lobby.disband": { ja: "ルームを解散", en: "Disband room" },
+  "lobby.kick": { ja: "追放", en: "Kick" },
+  "room.reveal": { ja: "ルームコードを表示", en: "Show room code" },
+  "room.hide": { ja: "ルームコードを隠す", en: "Hide room code" },
+  "room.hiddenHint": { ja: "配信中も安心。👁 で表示・コピー", en: "Hidden for streaming — tap 👁 to reveal & copy" },
   "lobby.needOpponent": { ja: "開始には対戦相手（CPU可）が必要", en: "Add an opponent (or CPU) to start" },
   "lobby.hint": {
     ja: "ホストは2人以上で開始できます。CPU を追加してソロでも、コードを共有して友達とでも。",

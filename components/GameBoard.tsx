@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BattleLog } from "./BattleLog";
 import { CardView } from "./CardView";
 import { OrbitBoard } from "./OrbitBoard";
+import { RoomCode } from "./RoomCode";
 import { SfxToggle } from "./SfxToggle";
 import { canDefend, canUseDefense } from "@/lib/rules";
 import { currentPlayerId } from "@/lib/room";
@@ -294,7 +295,7 @@ export function GameBoard() {
                 {roomState.direction === 1 ? "↻" : "↺"}
               </span>
             </div>
-            {t("game.room")} <span className="font-bold text-neon-gold">{roomState.code}</span>
+            <RoomCode code={roomState.code} />
           </div>
           <SfxToggle />
         </div>

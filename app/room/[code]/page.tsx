@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { use, useEffect } from "react";
+import { use, useEffect, useRef } from "react";
 import { GameBoard } from "@/components/GameBoard";
 import { ResultScreen } from "@/components/ResultScreen";
 import { RoomLobby } from "@/components/RoomLobby";
@@ -19,18 +19,33 @@ export default function RoomPage({
   const t = useT();
   const configured = useGameStore((s) => s.configured);
   const roomState = useGameStore((s) => s.roomState);
+  const identity = useGameStore((s) => s.identity);
   const joinRoom = useGameStore((s) => s.joinRoom);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
 
   const roomCode = code.toUpperCase();
+  // Set once we've been kicked / the room was disbanded, to stop auto-rejoin.
+  const ejectedRef = useRef(false);
 
   // Reconnect on direct load / refresh (store resets on hard reload).
   useEffect(() => {
-    if (configured && !roomState) {
+    if (configured && !roomState && !ejectedRef.current) {
       joinRoom(roomCode);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configured, roomCode]);
+
+  // Ejection: if we hold a room but our seat is gone (host kicked us, or the
+  // room was disbanded), bail back home and don't silently rejoin.
+  const inRoom = roomState?.players.some((p) => p.clientId === identity.id) ?? true;
+  useEffect(() => {
+    if (roomState && roomState.phase !== "finished" && !inRoom && !ejectedRef.current) {
+      ejectedRef.current = true;
+      leaveRoom();
+      router.push("/");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomState, inRoom]);
 
   if (!configured) return <SetupScreen />;
 

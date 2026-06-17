@@ -75,9 +75,10 @@ interface GameStore {
   joinRoom: (code: string) => Promise<boolean>;
   startSolo: (cpuCount?: number) => Promise<string | null>;
   leaveRoom: () => void;
+  disbandRoom: () => void;
   toggleReady: () => void;
   addCpu: () => void;
-  removeCpu: (id: string) => void;
+  kickPlayer: (id: string) => void;
   startMatch: () => void;
   restart: () => void;
   sendGameAction: (action: GameAction) => void;
@@ -374,6 +375,20 @@ export const useGameStore = create<GameStore>((set, get) => {
       set({ roomState: null, isHost: false, error: null });
     },
 
+    // Host: kick every other player (they're ejected when their seat vanishes),
+    // then leave — effectively closing the room.
+    disbandRoom: () => {
+      const myId = get().identity.id;
+      const finish = () => get().leaveRoom();
+      void applyAndPersist((s) => {
+        let next = s;
+        for (const p of s.players) {
+          if (p.clientId !== myId) next = removePlayer(next, p.id);
+        }
+        return next;
+      }).then(finish, finish);
+    },
+
     toggleReady: () => {
       const { roomState } = get();
       const me = roomState?.players.find((p) => p.id === myPlayerId);
@@ -383,7 +398,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     addCpu: () => void applyAndPersist((s) => addCpuPlayer(s)),
 
-    removeCpu: (id) => void applyAndPersist((s) => removePlayer(s, id)),
+    kickPlayer: (id) => void applyAndPersist((s) => removePlayer(s, id)),
 
     startMatch: () => void applyAndPersist((s) => startGame(s)),
 
