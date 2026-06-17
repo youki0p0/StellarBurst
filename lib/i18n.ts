@@ -191,8 +191,7 @@ const DICT: Record<string, Entry> = {
   "stella.toggle": { ja: "STELLAコール（トドメ宣言）", en: "STELLA call (declare a finish)" },
   "stella.declareBtn": { ja: "🌟 STELLA！で使う", en: "🌟 Play with STELLA!" },
   "stella.windowTitle": { ja: "STELLA！宣言中", en: "STELLA called!" },
-  "stella.youAreTarget": { ja: "トドメ宣言された！言い返して回避！", en: "You're called for the finish — call back to escape!" },
-  "stella.escapeBtn": { ja: "🌟 STELLA！と言い返す（回避＆強化）", en: "🌟 Call STELLA back (escape + buff)" },
+  "stella.youAreTarget": { ja: "トドメ宣言された！防御するか受けろ！", en: "You're called for the finish — block it or take it!" },
   "stella.pointOutBtn": { ja: "指摘する！", en: "Point it out!" },
   "stella.pointedAlready": { ja: "指摘済み", en: "Pointed out" },
   "stella.bystanderHint": { ja: "本当にトドメ？的中で強化・ハズレで −10", en: "A real finish? Buff if right · −10 if wrong" },
@@ -201,7 +200,6 @@ const DICT: Record<string, Entry> = {
     ja: "{name} が {target} にトドメ宣言——STELLA！",
     en: "{name} calls STELLA on {target} — going for the finish!",
   },
-  "log.stellaEscape": { ja: "{name} が STELLA！と言い返して回避！", en: "{name} calls STELLA back and escapes!" },
   "log.stellaFail": { ja: "{name} はトドメを外した（コール失敗で {dmg} 減光）。", en: "{name} failed the finish (−{dmg} light)." },
   "log.pointOut": { ja: "{name} が指摘した！", en: "{name} points it out!" },
   "log.pointHit": { ja: "{name} の指摘は的中！", en: "{name} called it right!" },
@@ -246,23 +244,17 @@ export function t(
 // --- Card text localization ------------------------------------------------
 
 const DEFENSE_TEXT: Record<string, Entry> = {
-  block: { ja: "フレアの減光を全てカット（星盾）。", en: "Block all light loss from one flare." },
-  reflect: {
-    ja: "全てカットし、重力で相手に反射する。",
-    en: "Block all light loss and reflect it back at the attacker.",
-  },
-  pass: {
-    ja: "受けたフレアを次の星へ受け流す。",
-    en: "Shove the incoming flare onto the next star.",
-  },
+  block: { ja: "減光を全てカット", en: "Block all damage" },
+  reflect: { ja: "カットして反射", en: "Block + reflect back" },
+  pass: { ja: "次の星へ受け流す", en: "Pass to next star" },
 };
 
 const SPECIAL_TEXT: Record<string, Entry> = {
-  heal: { ja: "自分の輝度を回復する（再点火）。", en: "Rekindle some of your own light." },
-  shuffle_hands: { ja: "星雲嵐で全員の手札を配り直す。", en: "A nebula storm reshuffles every hand." },
-  skip_turn: { ja: "日食で次の星の行動を飛ばす。", en: "Eclipse the next star — they skip a turn." },
-  reverse: { ja: "軌道を逆行させる。", en: "Reverse the orbit direction." },
-  slip_damage: { ja: "次の星を流星侵食（3ターン減光）。", en: "Meteor decay: the next star loses light for 3 turns." },
+  heal: { ja: "輝度を回復", en: "Rekindle light" },
+  shuffle_hands: { ja: "全員の手札を混ぜる", en: "Shuffle all hands" },
+  skip_turn: { ja: "次の星を日食(行動不可)", en: "Eclipse the next star" },
+  reverse: { ja: "軌道を逆行", en: "Reverse the orbit" },
+  slip_damage: { ja: "次の星を侵食(3ターン)", en: "Decay next, 3 turns" },
 };
 
 // Kept short so they fit a card on one line.

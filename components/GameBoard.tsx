@@ -44,8 +44,6 @@ function effectFor(
       return { sfx: "eclipse" };
     case "log.stellaDeclare":
       return { sfx: "stella", flash: target ? { id: target, kind: "super" } : undefined };
-    case "log.stellaEscape":
-      return { sfx: "stella", flash: e.actorId ? { id: e.actorId, kind: "reflect" } : undefined };
     case "log.pointOut":
     case "log.pointHit":
       return { sfx: "callout" };
@@ -237,12 +235,6 @@ export function GameBoard() {
             {iAmFinished ? (
               <>
                 <p className="mt-1 text-sm font-bold text-neon-pink">{t("stella.youAreTarget")}</p>
-                <button
-                  onClick={() => sendGameAction({ type: "call_out" })}
-                  className="btn-primary mt-2 w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-3 text-lg font-black"
-                >
-                  {t("stella.escapeBtn")}
-                </button>
                 {stellaShields.length > 0 && (
                   <div className="mt-2 flex flex-wrap justify-center gap-2">
                     {stellaShields.map((c) => (
