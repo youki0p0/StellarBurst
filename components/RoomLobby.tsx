@@ -15,6 +15,7 @@ export function RoomLobby() {
   const startMatch = useGameStore((s) => s.startMatch);
   const addCpu = useGameStore((s) => s.addCpu);
   const removeCpu = useGameStore((s) => s.removeCpu);
+  const error = useGameStore((s) => s.error);
   const [copied, setCopied] = useState(false);
 
   if (!roomState) return null;
@@ -124,6 +125,7 @@ export function RoomLobby() {
             <p className="text-center text-xs text-slate-500">{t("lobby.hint")}</p>
           </>
         )}
+        {error && <p className="text-center text-sm text-card-red">{t(error)}</p>}
       </div>
     </div>
   );

@@ -393,7 +393,28 @@ export async function persistState(
     .eq("version", expected)
     .select("id");
 
-  if (error || !data || data.length === 0) return false; // conflict / failure
+  if (error) {
+    // A real error here is almost always RLS/permissions on rooms UPDATE.
+    console.error("[StellarBurst] rooms.update failed:", error.message);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    // 0 rows: either a version race (another writer won) or an RLS policy that
+    // silently allows 0 rows to be updated. Probe the current version to tell.
+    const { data: probe } = await supabase
+      .from("rooms")
+      .select("version")
+      .eq("id", roomId)
+      .maybeSingle();
+    const live = (probe as { version?: number } | null)?.version;
+    if (live === expected) {
+      console.error(
+        "[StellarBurst] rooms.update affected 0 rows but version is unchanged — " +
+          "the UPDATE is being blocked (RLS/grants). Re-run supabase/schema.sql.",
+      );
+    }
+    return false; // conflict / blocked
+  }
 
   // Upsert all current players.
   const rows = next.players.map((p) => ({

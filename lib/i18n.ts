@@ -48,6 +48,10 @@ const DICT: Record<string, Entry> = {
     ja: "ソロゲームを開始できませんでした。Supabase の設定を確認してください。",
     en: "Could not start solo game. Check Supabase setup.",
   },
+  "error.persist_failed": {
+    ja: "操作をサーバに保存できませんでした。Supabase の権限/RLS（特に rooms の UPDATE 許可）を確認し、supabase/schema.sql を再実行してください。",
+    en: "Couldn't save to the server. Check Supabase permissions/RLS (especially rooms UPDATE) and re-run supabase/schema.sql.",
+  },
 
   // Lobby
   "lobby.roomCode": { ja: "ルームコード", en: "Room code" },
