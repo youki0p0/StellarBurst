@@ -209,11 +209,11 @@ export function t(
 // --- Card text localization ------------------------------------------------
 
 const DEFENSE_TEXT: Record<string, Entry> = {
-  reduce_third: { ja: "ダメージを1/3軽減する。", en: "Reduce incoming damage by 1/3." },
-  reduce_half: { ja: "ダメージを1/2軽減する。", en: "Reduce incoming damage by 1/2." },
-  reduce_twothirds: { ja: "ダメージを2/3軽減する。", en: "Reduce incoming damage by 2/3." },
-  reflect: { ja: "攻撃を相手に跳ね返す。", en: "Reflect the attack back at the attacker." },
-  nullify_fatal: { ja: "致命の一撃を無効化する。", en: "Negate a fatal attack entirely." },
+  block: { ja: "攻撃のダメージを全てカットする。", en: "Block all damage from one attack." },
+  reflect: {
+    ja: "ダメージを全てカットし、相手に跳ね返す。",
+    en: "Block all damage and reflect it back at the attacker.",
+  },
 };
 
 const SPECIAL_TEXT: Record<string, Entry> = {
@@ -230,11 +230,8 @@ const CARD_NAME: Record<string, Entry> = {
   "cardname.flame": { ja: "火炎斬", en: "Red Strike" },
   "cardname.bolt": { ja: "雷撃", en: "Blue Strike" },
   "cardname.claw": { ja: "爪撃", en: "Green Strike" },
-  "cardname.lightguard": { ja: "軽装ガード", en: "Light Guard" },
-  "cardname.aegis": { ja: "イージス", en: "Aegis" },
-  "cardname.bulwark": { ja: "大盾", en: "Bulwark" },
+  "cardname.guard": { ja: "ガード", en: "Guard" },
   "cardname.mirror": { ja: "反射の鏡", en: "Mirror Ward" },
-  "cardname.laststand": { ja: "不屈", en: "Last Stand" },
   "cardname.mend": { ja: "回復", en: "Mend" },
   "cardname.chaos": { ja: "混沌の交換", en: "Chaos Swap" },
   "cardname.stagger": { ja: "ひるませ", en: "Stagger" },
@@ -253,13 +250,10 @@ export function cardNameKey(card: Card): string {
   }
   if (card.kind === "defense") {
     const map: Record<string, string> = {
-      reduce_third: "cardname.lightguard",
-      reduce_half: "cardname.aegis",
-      reduce_twothirds: "cardname.bulwark",
+      block: "cardname.guard",
       reflect: "cardname.mirror",
-      nullify_fatal: "cardname.laststand",
     };
-    return map[card.defense ?? ""] ?? "cardname.sword";
+    return map[card.defense ?? ""] ?? "cardname.guard";
   }
   const map: Record<string, string> = {
     heal: "cardname.mend",

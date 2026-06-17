@@ -21,16 +21,13 @@ const ATTACKS: Card[] = [
 ];
 
 const DEFENSES: Card[] = [
-  mk({ kind: "defense", color: "colorless", defense: "reduce_third" }),
-  mk({ kind: "defense", color: "colorless", defense: "reduce_half" }),
-  mk({ kind: "defense", color: "colorless", defense: "reduce_twothirds" }),
+  mk({ kind: "defense", color: "colorless", defense: "block" }),
   mk({ kind: "defense", color: "colorless", defense: "reflect" }),
-  mk({ kind: "defense", color: "colorless", defense: "nullify_fatal" }),
 ];
 
 const DEFENSE_COLORS: Card[] = (
   ["colorless", "red", "blue", "green"] as CardColor[]
-).map((color) => mk({ kind: "defense", color, defense: "reduce_half" }));
+).map((color) => mk({ kind: "defense", color, defense: "block" }));
 
 const SPECIALS: Card[] = [
   mk({ kind: "special", color: "colorless", special: "heal", value: 20 }),

@@ -70,14 +70,13 @@ export function chooseCpuDefense(state: RoomState, playerId: string): string | n
   );
   if (usable.length === 0) return null;
 
-  // Against a fatal blow, spend the cheapest defense to survive.
+  // Against a fatal blow, spend a plain block if possible (save reflects).
   if (attack.fatal) {
-    const cheap =
-      usable.find((c) => c.defense === "reduce_third") ?? usable[0];
-    return cheap.id;
+    const block = usable.find((c) => c.defense === "block") ?? usable[0];
+    return block.id;
   }
 
-  // For small hits, don't waste a strong block; otherwise pick the best one.
+  // For small hits, don't bother burning a card; otherwise prefer reflect.
   const incoming = attack.damage ?? 0;
   if (incoming <= 12 && Math.random() < 0.5) return null;
   return bestDefense(usable).id;
@@ -97,11 +96,8 @@ function strongest(attacks: Card[]): Card {
 
 function bestDefense(cards: Card[]): Card {
   const rank: Record<string, number> = {
-    reflect: 5,
-    reduce_twothirds: 4,
-    reduce_half: 3,
-    reduce_third: 2,
-    nullify_fatal: 1,
+    reflect: 2, // reflect also deals damage back, so prefer it
+    block: 1,
   };
   return cards.reduce((a, b) =>
     (rank[b.defense ?? ""] ?? 0) > (rank[a.defense ?? ""] ?? 0) ? b : a,

@@ -26,41 +26,43 @@ function player(id: string, hp: number, alive = true): Player {
 
 describe("canDefend (color rules)", () => {
   it("colorless attack is defendable by any color", () => {
-    expect(canDefend(atk("colorless"), def("red", "reduce_half"))).toBe(true);
-    expect(canDefend(atk("colorless"), def("colorless", "reduce_half"))).toBe(true);
+    expect(canDefend(atk("colorless"), def("red", "block"))).toBe(true);
+    expect(canDefend(atk("colorless"), def("colorless", "block"))).toBe(true);
+    expect(canDefend(atk("colorless"), def("green", "reflect"))).toBe(true);
   });
-  it("colored attack needs matching color or colorless wildcard", () => {
-    expect(canDefend(atk("red"), def("red", "reduce_half"))).toBe(true);
-    expect(canDefend(atk("red"), def("colorless", "reduce_half"))).toBe(true);
-    expect(canDefend(atk("red"), def("blue", "reduce_half"))).toBe(false);
+  it("colored attack is defendable ONLY by the same color", () => {
+    expect(canDefend(atk("red"), def("red", "block"))).toBe(true);
+    expect(canDefend(atk("red"), def("colorless", "block"))).toBe(false); // no wildcard
+    expect(canDefend(atk("red"), def("blue", "block"))).toBe(false);
   });
 });
 
-describe("resolveAttack (damage math)", () => {
+describe("resolveAttack (block / reflect)", () => {
   it("full damage when undefended", () => {
     expect(resolveAttack(atk("red", 30), null, 100).damageToTarget).toBe(30);
   });
-  it("reduces by 1/3, 1/2, 2/3", () => {
-    expect(resolveAttack(atk("colorless", 30), def("red", "reduce_third"), 100).damageToTarget).toBe(20);
-    expect(resolveAttack(atk("colorless", 30), def("red", "reduce_half"), 100).damageToTarget).toBe(15);
-    expect(resolveAttack(atk("colorless", 30), def("red", "reduce_twothirds"), 100).damageToTarget).toBe(10);
+  it("block fully cuts the damage", () => {
+    const r = resolveAttack(atk("colorless", 30), def("red", "block"), 100);
+    expect(r.damageToTarget).toBe(0);
+    expect(r.damageToAttacker).toBe(0);
+    expect(r.defenseConsumed).toBe(true);
   });
-  it("reflects damage back to attacker", () => {
+  it("reflect fully cuts and bounces the full damage back", () => {
     const r = resolveAttack(atk("colorless", 25), def("red", "reflect"), 100);
     expect(r.damageToTarget).toBe(0);
     expect(r.damageToAttacker).toBe(25);
   });
-  it("an invalid-color defense does not reduce damage", () => {
-    expect(resolveAttack(atk("red", 30), def("blue", "reduce_half"), 100).damageToTarget).toBe(30);
+  it("a wrong-color defense does not apply (full damage)", () => {
+    expect(resolveAttack(atk("red", 30), def("blue", "block"), 100).damageToTarget).toBe(30);
   });
 });
 
 describe("fatal attacks", () => {
-  it("is lethal when undefended (but only because no defense was held)", () => {
+  it("is lethal when undefended", () => {
     expect(resolveAttack(atk("colorless", 999, true), null, 70).damageToTarget).toBe(70);
   });
-  it("is nullified by ANY defense card", () => {
-    const r = resolveAttack(atk("red", 999, true), def("blue", "reduce_third"), 70);
+  it("is nullified by ANY defense card (color-independent safety valve)", () => {
+    const r = resolveAttack(atk("red", 999, true), def("blue", "block"), 70);
     expect(r.nullified).toBe(true);
     expect(r.damageToTarget).toBe(0);
     expect(r.defenseConsumed).toBe(true);

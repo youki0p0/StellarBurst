@@ -107,7 +107,7 @@ describe("attack resolution through the reducer", () => {
       kind: "defense",
       color: "blue",
       name: "Guard",
-      defense: "reduce_third",
+      defense: "block",
       description: "",
     };
     s.hands[attackerId] = [fatal, ...s.hands[attackerId]];

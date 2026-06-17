@@ -1,4 +1,5 @@
 import {
+  drawAttack,
   drawCard,
   drawCards,
   HAND_SIZE,
@@ -290,6 +291,14 @@ function startNextTurn(state: RoomState): void {
 function drawTo(state: RoomState, playerId: string): void {
   const hand = state.hands[playerId] ?? [];
   while (hand.length < HAND_SIZE) hand.push(drawCard());
+  // Never leave a player with an all-defense hand (defense is reactive only, so
+  // they'd be unable to act on their turn). Guarantee at least one attack card:
+  // swap a defense card for a fresh attack. This covers "4 defense + 1 → attack"
+  // and the all-defense safety case.
+  if (!hand.some((c) => c.kind === "attack")) {
+    const idx = hand.findIndex((c) => c.kind === "defense");
+    hand[idx === -1 ? hand.length - 1 : idx] = drawAttack();
+  }
   state.hands[playerId] = hand;
 }
 
