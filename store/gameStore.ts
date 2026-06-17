@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { chooseCpuAction, chooseCpuDefense } from "@/lib/cpu";
 import {
   createRoomRow,
+  createStartedRoomRow,
   joinRoomRow,
   leaveRoomRow,
   loadRoomState,
@@ -16,8 +17,11 @@ import {
 import {
   addCpuPlayer,
   applyAction,
+  createRoomState,
   currentPlayerId,
   generateRoomCode,
+  makePlayer,
+  newId,
   removePlayer,
   resetToLobby,
   startGame,
@@ -100,6 +104,10 @@ export const useGameStore = create<GameStore>((set, get) => {
     if (!roomId) return;
     const state = await loadRoomState(roomId);
     if (!state) return;
+    // Ignore stale reads: rooms.version is monotonic, so a snapshot older than
+    // what we already hold is an out-of-order read and must not clobber state.
+    const cur = get().roomState;
+    if (cur && cur.code === state.code && state.version < cur.version) return;
     const me = state.players.find((p) => p.id === myPlayerId);
     set({ roomState: state, isHost: Boolean(me?.isHost) });
     maybeRunCpu(state);
@@ -236,13 +244,40 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
 
     startSolo: async (cpuCount = 3) => {
-      const code = await get().createRoom();
-      if (!code) return null;
-      const bots = Math.max(1, Math.min(cpuCount, 7));
-      for (let i = 0; i < bots; i++) {
-        await applyAndPersist((s) => addCpuPlayer(s));
+      const { identity } = get();
+      if (!isSupabaseConfigured) {
+        set({ error: "Supabase is not configured." });
+        return null;
       }
-      await applyAndPersist((s) => startGame(s));
+      // Build the fully-started game in memory, then persist it in one batch so
+      // there are no intermediate snapshots for polling/realtime to clobber.
+      const code = generateRoomCode();
+      const hostId = newId();
+      const host = makePlayer(hostId, identity.name || "You", {
+        isHost: true,
+        clientId: identity.id,
+      });
+      host.isReady = true;
+      let state = createRoomState(code, host);
+      const bots = Math.max(1, Math.min(cpuCount, 7));
+      for (let i = 0; i < bots; i++) state = addCpuPlayer(state);
+      state = startGame(state);
+
+      set({ connecting: true, error: null, roomState: null });
+      teardown();
+      const res = await createStartedRoomRow(state, identity.id);
+      if (!res) {
+        set({ connecting: false, error: "Could not start solo game. Check Supabase setup." });
+        return null;
+      }
+      roomId = res.roomId;
+      myPlayerId = res.playerId;
+      // Reflect the started game from the DB ids we just inserted.
+      state.code = code;
+      channel = subscribeRoom(roomId, scheduleReload);
+      startPolling();
+      set({ roomState: state, isHost: true, connecting: false });
+      maybeRunCpu(state);
       return code;
     },
 
