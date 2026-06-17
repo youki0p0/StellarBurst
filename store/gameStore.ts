@@ -187,6 +187,22 @@ export const useGameStore = create<GameStore>((set, get) => {
     const me = state.players.find((p) => p.id === myPlayerId);
     if (!me?.isHost) return;
 
+    // A Burst CPU declares STELLA! on its own (bots never forget).
+    const owe = state.stella;
+    if (owe) {
+      const sp = state.players.find((x) => x.id === owe.playerId);
+      if (sp?.isCPU) {
+        cpuTimer = setTimeout(() => {
+          void applyAndPersist((s) =>
+            s.stella?.playerId === sp.id
+              ? applyAction(s, { type: "stella_call" }, sp.id)
+              : s,
+          );
+        }, 600);
+        return;
+      }
+    }
+
     if (state.phase === "action") {
       const cur = currentPlayerId(state);
       const p = state.players.find((x) => x.id === cur);

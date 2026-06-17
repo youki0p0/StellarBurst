@@ -35,6 +35,7 @@ interface RoomRow {
     turnOrder?: string[];
     currentTurnIndex?: number;
     direction?: 1 | -1;
+    stella?: RoomState["stella"];
     pending?: RoomState["pending"];
   } | null;
   version: number;
@@ -168,6 +169,7 @@ export async function loadRoomState(roomId: string): Promise<RoomState | null> {
     turnOrder: st.turnOrder ?? [],
     currentTurnIndex: st.currentTurnIndex ?? 0,
     direction: st.direction ?? 1,
+    stella: st.stella ?? null,
     hands,
     pending: st.pending ?? null,
     log: eventRows.map(rowToEvent),
@@ -195,7 +197,7 @@ export async function createRoomRow(
     status: "waiting",
     host_client_id: client.clientId,
     seed: String(seed),
-    state: { phase: "lobby", turnOrder: [], currentTurnIndex: 0, direction: 1, pending: null },
+    state: { phase: "lobby", turnOrder: [], currentTurnIndex: 0, direction: 1, stella: null, pending: null },
     version: 0,
   });
   if (roomErr) {
@@ -251,6 +253,7 @@ export async function createStartedRoomRow(
       turnOrder: state.turnOrder,
       currentTurnIndex: state.currentTurnIndex,
       direction: state.direction,
+      stella: state.stella,
       pending: state.pending,
     },
     version: state.version,
@@ -389,6 +392,7 @@ export async function persistState(
         turnOrder: next.turnOrder,
         currentTurnIndex: next.currentTurnIndex,
         direction: next.direction,
+        stella: next.stella,
         pending: next.pending,
       },
       version: next.version,

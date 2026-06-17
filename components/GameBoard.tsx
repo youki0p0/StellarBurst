@@ -41,6 +41,14 @@ export function GameBoard() {
 
   const opponents = roomState.players.filter((p) => p.id !== myId);
 
+  // STELLA Call window.
+  const stella = roomState.stella;
+  const iOweStella = Boolean(stella && stella.playerId === myId && me?.alive);
+  const stellaPlayer = stella ? roomState.players.find((p) => p.id === stella.playerId) : null;
+  const canCallOut = Boolean(
+    stella && me?.alive && stella.playerId !== myId && stellaPlayer,
+  );
+
   // Shields we may answer an incoming flare with: block/reflect need a valid
   // color (or it's a supernova), pass works on anything.
   const defenseOptions = useMemo(() => {
@@ -101,6 +109,26 @@ export function GameBoard() {
           {t("game.room")} <span className="font-bold text-neon-gold">{roomState.code}</span>
         </div>
       </div>
+
+      {/* STELLA Call window */}
+      {iOweStella && (
+        <button
+          onClick={() => sendGameAction({ type: "stella_call" })}
+          className="btn-primary w-full animate-pop bg-gradient-to-r from-neon-gold to-neon-pink py-4 text-xl font-black tracking-widest"
+        >
+          {t("stella.declare")}
+          <span className="ml-2 text-sm font-normal opacity-80">— {t("stella.prompt")}</span>
+        </button>
+      )}
+      {!iOweStella && canCallOut && stellaPlayer && (
+        <button
+          onClick={() => sendGameAction({ type: "call_out", targetId: stellaPlayer.id })}
+          className="btn-secondary w-full border-neon-pink/70 text-neon-pink"
+        >
+          {t("stella.callout")}{" "}
+          <span className="text-xs opacity-70">({t("stella.calloutOf", { name: stellaPlayer.name })})</span>
+        </button>
+      )}
 
       {/* Player panels */}
       <div className="grid grid-cols-2 gap-2">

@@ -36,6 +36,15 @@ export function generateRoomCode(): string {
 
 export const MAX_PLAYERS = 8;
 
+/** At or below this Luminosity a star is "Burst" and owes a STELLA! call. */
+export const BURST_THRESHOLD = 20;
+/** Light lost when called out for forgetting STELLA!. */
+const STELLA_PENALTY = 5;
+
+export function isBurst(p: Player): boolean {
+  return p.alive && p.hp > 0 && p.hp <= BURST_THRESHOLD;
+}
+
 function emptyEffects(): PlayerEffects {
   return { skipNextTurn: false, defenseLimitedTurns: 0, slip: null };
 }
@@ -77,6 +86,7 @@ export function createRoomState(code: string, host: Player): RoomState {
     turnOrder: [],
     currentTurnIndex: 0,
     direction: 1,
+    stella: null,
     hands: {},
     pending: null,
     log: [],
@@ -222,6 +232,7 @@ export function startGame(state: RoomState): RoomState {
   }
   state.currentTurnIndex = -1; // startNextTurn will advance to 0
   state.direction = 1;
+  state.stella = null;
   state.winnerId = null;
   state.pending = null;
   state.phase = "action";
@@ -243,6 +254,7 @@ export function resetToLobby(state: RoomState): RoomState {
   state.turnOrder = [];
   state.currentTurnIndex = 0;
   state.direction = 1;
+  state.stella = null;
   state.hands = {};
   state.pending = null;
   state.winnerId = null;
@@ -334,6 +346,8 @@ function startNextTurn(state: RoomState): void {
       });
       continue;
     }
+    // A Burst star owes a STELLA! call at the start of its turn.
+    if (isBurst(p)) state.stella = { playerId: p.id };
     return; // this player takes their turn
   }
 }
@@ -481,6 +495,33 @@ export function applyAction(
     if (state.phase !== "defense" || !state.pending) return input;
     if (state.pending.targetId !== actorId) return input;
     return resolveDefense(state, action.cardId);
+  }
+
+  // STELLA! — the Burst star declares, closing the call window.
+  if (action.type === "stella_call") {
+    if (state.stella?.playerId !== actorId) return input;
+    state.stella = null;
+    pushEvent(state, { type: "info", actorId, key: "log.stella", params: { name: actor.name } });
+    return bump(state);
+  }
+
+  // Call out a Burst star who forgot to declare → small light penalty.
+  if (action.type === "call_out") {
+    const s = state.stella;
+    if (!s || s.playerId === actorId) return input;
+    const target = getPlayer(state, s.playerId);
+    state.stella = null;
+    if (!target || !isBurst(target)) return bump(state); // window already void
+    dealDamage(state, target.id, STELLA_PENALTY);
+    pushEvent(state, {
+      type: "info",
+      actorId,
+      targetId: target.id,
+      key: "log.calledOut",
+      params: { caller: actor.name, target: target.name, dmg: STELLA_PENALTY },
+    });
+    checkWin(state);
+    return bump(state);
   }
 
   // All other actions require it to be the actor's turn in the action phase.

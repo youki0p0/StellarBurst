@@ -1,6 +1,7 @@
 "use client";
 
 import type { Player } from "@/lib/types";
+import { isBurst } from "@/lib/room";
 import { useT } from "@/store/i18n";
 
 export function PlayerPanel({
@@ -66,6 +67,11 @@ export function PlayerPanel({
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]">
+        {isBurst(player) && (
+          <span className="animate-pop rounded bg-neon-gold/20 px-1.5 py-0.5 font-bold text-neon-gold">
+            {t("common.burst")}
+          </span>
+        )}
         {typeof handCount === "number" && (
           <span className="text-slate-400">🃏 {handCount}</span>
         )}
