@@ -85,21 +85,23 @@ export function GameBoard() {
   const lastEventId = useRef<string | null>(null);
 
   // Size the orbit board to the leftover space so the game stays on one screen,
-  // but cap it small: the star ring is the lowest-information area, so it never
-  // needs to dominate. It still shrinks below the cap on short screens.
-  const BOARD_CAP = 184; // px
+  // but cap it: the star ring is low-information, so keep it compact. The cap
+  // grows a little with player count so 5–8 stars stay legible without
+  // overlapping; it still shrinks below the cap on short screens.
+  const playerCount = roomState.players.length;
+  const boardCap = playerCount <= 4 ? 184 : 184 + (playerCount - 4) * 22;
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const [boardSize, setBoardSize] = useState(0);
   useEffect(() => {
     const el = boardWrapRef.current;
     if (!el) return;
     const measure = () =>
-      setBoardSize(Math.min(BOARD_CAP, Math.floor(Math.min(el.clientWidth, el.clientHeight))));
+      setBoardSize(Math.min(boardCap, Math.floor(Math.min(el.clientWidth, el.clientHeight))));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [boardCap]);
 
   // React to fresh battle-log events with sound + a star flash.
   useEffect(() => {
