@@ -47,15 +47,36 @@ export function OrbitBoard(props: OrbitBoardProps) {
   const t = useT();
   const n = Math.max(players.length, 1);
 
+  // Lay the stars on a ring sized so neighbours never overlap and nothing
+  // clips the board edge. We solve for the largest star "footprint" that fits
+  // both the chord between neighbours (no overlap) and the board radius (no
+  // clip), then scale each star token to match.
+  const S = sizePx ?? 288; // board side in px
+  const TOKEN = 96; // a star token's natural footprint (px)
+  const MARGIN = 6; // clearance from the board edge
+  const GAP = 8; // min gap between neighbouring stars
+  const sinSep = n > 1 ? Math.sin(Math.PI / n) : 1;
+  let footprint = (S / 2 - MARGIN - GAP / (2 * sinSep)) / (1 / (2 * sinSep) + 0.5);
+  footprint = Math.max(40, Math.min(TOKEN, footprint));
+  const starScale = footprint / TOKEN;
+  const minR = n > 1 ? (footprint + GAP) / (2 * sinSep) : 0; // separate neighbours
+  const maxR = S / 2 - footprint / 2 - MARGIN; // stay inside the board
+  const ringPct = (Math.max(0, Math.min(minR, Math.max(maxR, 0))) / S) * 100;
+
   return (
     <div
       className={`relative mx-auto aspect-square ${sizePx ? "" : `w-full ${className}`}`}
       style={sizePx ? { width: sizePx, height: sizePx } : undefined}
     >
-      {/* Faint orbit ring (passes through each star's outer anchor point) */}
+      {/* Faint orbit ring (passes through each star's centre) */}
       <div
         className="pointer-events-none absolute rounded-full border border-board-600/60"
-        style={{ left: "6%", top: "6%", width: "88%", height: "88%" }}
+        style={{
+          left: `${50 - ringPct}%`,
+          top: `${50 - ringPct}%`,
+          width: `${ringPct * 2}%`,
+          height: `${ringPct * 2}%`,
+        }}
         aria-hidden
       />
 
@@ -78,19 +99,13 @@ export function OrbitBoard(props: OrbitBoardProps) {
         </div>
       </div>
 
-      {/* Stars evenly spaced on the orbit. Two stars sit left/right; everything
-          else fans out from the top (3 → even thirds, 4 → diamond, …). Each
-          token is anchored at its ring point and grows *inward* toward the core,
-          so it never spills past the board edge regardless of its size. */}
+      {/* Stars evenly spaced on the ring. Two stars sit left/right; everything
+          else fans out from the top (3 → even thirds, 4 → diamond, …). */}
       {players.map((p, i) => {
         const startDeg = n === 2 ? 180 : -90;
         const angle = (startDeg + (i * 360) / n) * (Math.PI / 180);
-        const radius = 44;
-        const left = 50 + radius * Math.cos(angle);
-        const top = 50 + radius * Math.sin(angle);
-        // Pull the token inward from its ring point along the radial direction.
-        const tx = -50 - 50 * Math.cos(angle);
-        const ty = -50 - 50 * Math.sin(angle);
+        const left = 50 + ringPct * Math.cos(angle);
+        const top = 50 + ringPct * Math.sin(angle);
 
         const isTurn = turnId !== null && p.id === turnId;
         const isSelf = p.clientId === selfClientId;
@@ -118,12 +133,12 @@ export function OrbitBoard(props: OrbitBoardProps) {
           .filter(Boolean)
           .join(" ");
 
-        // Position lives on the wrapper; the token keeps `transform` free for
-        // the flash "pop" (a scale animation) so it never jumps on hit.
+        // Position lives on the outer wrapper; a middle wrapper holds the
+        // no-overlap scale; the token keeps `transform` free for the flash pop.
         const posStyle: CSSProperties = {
           left: `${left}%`,
           top: `${top}%`,
-          transform: `translate(${tx}%, ${ty}%)`,
+          transform: "translate(-50%, -50%)",
         };
 
         const inner = (
@@ -198,13 +213,15 @@ export function OrbitBoard(props: OrbitBoardProps) {
 
         return (
           <div key={p.id} className="absolute" style={posStyle}>
-            {isSelectable ? (
-              <button type="button" onClick={() => onSelect?.(p.id)} className={tokenClasses}>
-                {inner}
-              </button>
-            ) : (
-              <div className={tokenClasses}>{inner}</div>
-            )}
+            <div className="inline-block" style={{ transform: `scale(${starScale})` }}>
+              {isSelectable ? (
+                <button type="button" onClick={() => onSelect?.(p.id)} className={tokenClasses}>
+                  {inner}
+                </button>
+              ) : (
+                <div className={tokenClasses}>{inner}</div>
+              )}
+            </div>
           </div>
         );
       })}
