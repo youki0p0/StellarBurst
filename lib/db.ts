@@ -125,7 +125,12 @@ export async function loadRoomState(roomId: string): Promise<RoomState | null> {
   const [{ data: roomData }, { data: playerData }, { data: eventData }] =
     await Promise.all([
       supabase.from("rooms").select("*").eq("id", roomId).maybeSingle(),
-      supabase.from("players").select("*").eq("room_id", roomId).order("joined_at"),
+      supabase
+        .from("players")
+        .select("*")
+        .eq("room_id", roomId)
+        .order("joined_at")
+        .order("id"), // deterministic tiebreak (batch inserts share joined_at)
       supabase
         .from("game_events")
         .select("id,player_id,event_type,payload,created_at")

@@ -163,6 +163,19 @@ export function GameBoard() {
 
   const opponents = roomState.players.filter((p) => p.id !== myId);
 
+  // Lay the stars out in turn order (a fixed, seeded sequence) so each player
+  // keeps the same seat all game and the turn glow / orbit arrow move
+  // neighbour-to-neighbour around the ring.
+  const orderedPlayers = useMemo(() => {
+    const order = roomState.turnOrder;
+    if (!order.length) return roomState.players;
+    const rank = (id: string) => {
+      const i = order.indexOf(id);
+      return i === -1 ? order.length : i;
+    };
+    return [...roomState.players].sort((a, b) => rank(a.id) - rank(b.id));
+  }, [roomState.players, roomState.turnOrder]);
+
   // --- STELLA finishing window ---
   const stella = roomState.stella;
   const inStella = roomState.phase === "stella" && Boolean(stella) && Boolean(pending);
@@ -327,7 +340,7 @@ export function GameBoard() {
           shrinks to keep everything on one screen. */}
       <div ref={boardWrapRef} className="flex min-h-0 flex-1 items-center justify-center">
         <OrbitBoard
-          players={roomState.players}
+          players={orderedPlayers}
           turnId={turnId}
           direction={roomState.direction}
           selfClientId={identity.id}
