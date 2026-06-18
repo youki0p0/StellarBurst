@@ -87,13 +87,14 @@ export function OrbitBoard(props: OrbitBoardProps) {
       >
         <div className="absolute h-12 w-12 rounded-full bg-neon-gold/80 shadow-neon blur-[1px]" />
         <div className="absolute h-7 w-7 rounded-full bg-neon-gold animate-floaty" />
-        {/* Direction: a glowing star orbits the core — clockwise (↻) when the
-            orbit direction is +1, counter-clockwise (↺) when reversed. */}
+        {/* Direction: a glowing star revolves around the core — clockwise when
+            the orbit direction is +1, counter-clockwise when reversed. The
+            animation is set inline so the reverse direction always applies. */}
         <div
-          className={[
-            "absolute h-16 w-16 animate-[spin_5s_linear_infinite]",
-            direction === -1 ? "[animation-direction:reverse]" : "",
-          ].join(" ")}
+          className="absolute h-16 w-16"
+          style={{
+            animation: `orbit-spin 5s linear infinite${direction === -1 ? " reverse" : ""}`,
+          }}
         >
           <div className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 rounded-full bg-neon-cyan shadow-[0_0_10px_3px_rgba(34,211,238,0.95)]" />
         </div>
@@ -143,28 +144,39 @@ export function OrbitBoard(props: OrbitBoardProps) {
 
         const inner = (
           <>
-            {/* Star glyph */}
+            {/* Name (with a small star marker) */}
+            <div className="flex max-w-full items-center gap-0.5">
+              <span
+                className={[
+                  "text-xs leading-none",
+                  dead ? "text-board-600" : burst ? "text-neon-gold" : "text-neon-purple",
+                ].join(" ")}
+              >
+                {dead ? "✦" : "★"}
+              </span>
+              <span className="truncate text-[0.62rem] font-semibold text-white/90">
+                {p.name}
+              </span>
+            </div>
+
+            {/* Luminosity — the headline number, big and colour-coded. */}
             <div
               className={[
-                "text-lg leading-none",
-                dead ? "text-board-600" : burst ? "text-neon-gold" : "text-neon-purple",
+                "text-xl font-black leading-none tabular-nums",
+                dead
+                  ? "text-board-600"
+                  : hpRatio > 0.5
+                    ? "text-card-green"
+                    : hpRatio > 0.25
+                      ? "text-neon-gold"
+                      : "text-card-red",
               ].join(" ")}
             >
-              {dead ? "✦" : "★"}
-            </div>
-
-            {/* Name */}
-            <div className="max-w-full truncate text-[0.65rem] font-semibold text-white/90">
-              {p.name}
-            </div>
-
-            {/* HP text */}
-            <div className="text-[0.6rem] tabular-nums text-white/70">
-              {p.hp}/{p.maxHp}
+              {Math.max(0, p.hp)}
             </div>
 
             {/* Luminosity bar */}
-            <div className="h-1 w-full overflow-hidden rounded-full bg-board-900">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-board-900">
               <div
                 className={[
                   "h-full rounded-full transition-all",

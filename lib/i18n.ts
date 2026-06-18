@@ -190,11 +190,11 @@ const DICT: Record<string, Entry> = {
   "card.dmg": { ja: "減光", en: "DMG" },
 
   // Attack target labels (shown as a badge on attack cards)
-  "target.next": { ja: "隣", en: "Next" },
-  "target.prev": { ja: "逆隣", en: "Prev" },
-  "target.random": { ja: "ランダム", en: "Random" },
-  "target.all": { ja: "全体", en: "All" },
-  "target.choose": { ja: "指定", en: "Pick" },
+  "target.next": { ja: "隣", en: "Nxt" },
+  "target.prev": { ja: "逆", en: "Prv" },
+  "target.random": { ja: "乱", en: "Rnd" },
+  "target.all": { ja: "全", en: "AOE" },
+  "target.choose": { ja: "指", en: "Pick" },
 
   // STELLA finishing call
   "common.burst": { ja: "危険", en: "LOW" },

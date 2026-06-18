@@ -93,7 +93,7 @@ export function CardView({
           </span>
           {tgt && (
             <span
-              className={`flex items-center gap-0.5 rounded px-1 text-[9px] font-bold leading-none ${tgt.cls}`}
+              className={`flex items-center gap-0.5 whitespace-nowrap rounded px-1 text-[9px] font-bold leading-none ${tgt.cls}`}
             >
               <span className="leading-none">{tgt.glyph}</span>
               {!compact && <span>{t(tgt.key)}</span>}
