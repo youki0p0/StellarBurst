@@ -100,7 +100,7 @@ export function GameBoard() {
   // grows a little with player count so 5–8 stars stay legible without
   // overlapping; it still shrinks below the cap on short screens.
   const playerCount = roomState.players.length;
-  const boardCap = playerCount <= 4 ? 184 : 184 + (playerCount - 4) * 22;
+  const boardCap = playerCount <= 4 ? 208 : 208 + (playerCount - 4) * 20;
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const [boardSize, setBoardSize] = useState(0);
   useEffect(() => {

@@ -36,6 +36,14 @@ body {
   padding-right: calc(env(safe-area-inset-right, 0px) + 1rem);
 }
 
+/* Orbit-direction indicator: a star revolving around the core. Own keyframe so
+   we can flip the spin direction reliably via inline style. */
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-xl px-5 py-3 text-base font-semibold

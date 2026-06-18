@@ -73,12 +73,11 @@ function makeAttack(rng: () => number): Card {
       ? "colorless"
       : COLORED[Math.floor(rng() * COLORED.length)];
   // Flow-based targeting: attacks almost always follow the orbit ("next") so
-  // turn order stays readable. prev / random are rare spice; AOE stays modest.
-  // (Free-pick "choose" is retired from the deck.)
+  // turn order stays readable; "random" is rare spice and AOE stays modest.
+  // ("prev" / free-pick "choose" are retired from the deck.)
   const target = weightedPick<AttackTarget>(
     [
-      ["next", 82],
-      ["prev", 4],
+      ["next", 86],
       ["random", 4],
       ["all", 10],
     ],
