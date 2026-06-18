@@ -78,6 +78,17 @@ export function GameBoard() {
   const sendGameAction = useGameStore((s) => s.sendGameAction);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [declareStella, setDeclareStella] = useState(false);
+  // Default: double-tap a card to play it. Toggle to tap-then-confirm. Persisted.
+  const [doubleTap, setDoubleTap] = useState(true);
+  useEffect(() => {
+    setDoubleTap(localStorage.getItem("sb_playmode") !== "confirm");
+  }, []);
+  const togglePlayMode = () =>
+    setDoubleTap((v) => {
+      const next = !v;
+      localStorage.setItem("sb_playmode", next ? "double" : "confirm");
+      return next;
+    });
   const [now, setNow] = useState(() => Date.now());
   const [flash, setFlash] = useState<
     { id: string; kind: "hit" | "reflect" | "heal" | "super" } | null
@@ -200,20 +211,20 @@ export function GameBoard() {
     );
   }, [iAmFinished, pending, me, hand]);
 
-  function playCard(targetId?: string) {
-    if (!selectedCard) return;
-    if (selectedCard.kind === "attack") {
-      const stellaFlag = canDeclareStella && declareStella;
-      if (needsTarget(selectedCard)) {
+  function playCard(card: Card | null, targetId?: string) {
+    if (!card) return;
+    if (card.kind === "attack") {
+      const stellaFlag = card.attackTarget !== "all" && declareStella;
+      if (needsTarget(card)) {
         if (!targetId) return;
-        sendGameAction({ type: "play_attack", cardId: selectedCard.id, targetId, stella: stellaFlag });
+        sendGameAction({ type: "play_attack", cardId: card.id, targetId, stella: stellaFlag });
       } else {
-        sendGameAction({ type: "play_attack", cardId: selectedCard.id, stella: stellaFlag });
+        sendGameAction({ type: "play_attack", cardId: card.id, stella: stellaFlag });
       }
-    } else if (selectedCard.special === "heal") {
-      sendGameAction({ type: "play_heal", cardId: selectedCard.id });
+    } else if (card.special === "heal") {
+      sendGameAction({ type: "play_heal", cardId: card.id });
     } else {
-      sendGameAction({ type: "play_special", cardId: selectedCard.id });
+      sendGameAction({ type: "play_special", cardId: card.id });
     }
     setSelectedCardId(null);
     setDeclareStella(false);
@@ -221,6 +232,12 @@ export function GameBoard() {
 
   function handleCardTap(card: Card) {
     if (!isMyTurn) return;
+    // Double-tap mode: a second tap on the selected card plays it. (Target-pick
+    // cards still need a star tap, so they only select here.)
+    if (doubleTap && selectedCardId === card.id && !needsTarget(card)) {
+      playCard(card);
+      return;
+    }
     setSelectedCardId((cur) => (cur === card.id ? null : card.id));
   }
 
@@ -322,7 +339,7 @@ export function GameBoard() {
           }
           selectedId={null}
           finishingId={inStella && stella ? stella.targetId : null}
-          onSelect={(id) => playCard(id)}
+          onSelect={(id) => playCard(selectedCard, id)}
           flash={flash}
         />
       </div>
@@ -361,11 +378,22 @@ export function GameBoard() {
 
         {/* Hand + action bar */}
         <div>
-          {targetingMode && (
-            <div className="mb-2 text-center text-sm font-semibold text-neon-gold">
-              {t("game.selectTarget")}
-            </div>
-          )}
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-neon-gold">
+              {targetingMode
+                ? t("game.selectTarget")
+                : isMyTurn && doubleTap && selectedCard && !needsTarget(selectedCard)
+                  ? t("game.tapAgain")
+                  : ""}
+            </span>
+            <button
+              onClick={togglePlayMode}
+              className="shrink-0 rounded border border-board-600 bg-board-800 px-2 py-0.5 text-[11px] text-slate-300"
+              title={t("game.playMode")}
+            >
+              {t("game.playMode")}: {doubleTap ? t("game.modeDouble") : t("game.modeConfirm")}
+            </button>
+          </div>
 
           <div className="flex gap-2 overflow-x-auto pb-2">
             {hand.map((c) => (
@@ -398,7 +426,7 @@ export function GameBoard() {
           {isMyTurn && (
             <div className="flex gap-2">
               {selectedCard && !needsTarget(selectedCard) && (
-                <button onClick={() => playCard()} className="btn-primary flex-1">
+                <button onClick={() => playCard(selectedCard)} className="btn-primary flex-1">
                   {willDeclareStella
                     ? t("stella.declareBtn")
                     : `${t("game.play")} ${localizeCardName(selectedCard, lang)}`}
