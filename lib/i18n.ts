@@ -187,7 +187,18 @@ const DICT: Record<string, Entry> = {
   "kind.special": { ja: "特", en: "SPC" },
 
   // Damage unit shown beside an attack card's number
-  "card.dmg": { ja: "減光", en: "DMG" },
+  "card.dmg": { ja: "ダメージ", en: "DMG" },
+
+  // Plain-language effect labels shown on cards (the mechanical effect)
+  "fx.fatal": { ja: "即死", en: "FATAL" },
+  "fx.block": { ja: "全ダメージ防ぐ", en: "Block all" },
+  "fx.reflect": { ja: "反射", en: "Reflect" },
+  "fx.pass": { ja: "受け流す", en: "Pass on" },
+  "fx.heal": { ja: "回復", en: "Heal" },
+  "fx.reverse": { ja: "逆回転", en: "Reverse" },
+  "fx.skip_turn": { ja: "スキップ", en: "Skip" },
+  "fx.shuffle_hands": { ja: "手札シャッフル", en: "Shuffle hands" },
+  "fx.slip_damage": { ja: "侵食", en: "Decay" },
 
   // Attack target labels (shown as a badge on attack cards)
   "target.next": { ja: "隣", en: "Nxt" },
