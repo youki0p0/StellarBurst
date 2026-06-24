@@ -191,7 +191,7 @@ const DICT: Record<string, Entry> = {
 
   // Plain-language effect labels shown on cards (the mechanical effect)
   "fx.fatal": { ja: "即死", en: "FATAL" },
-  "fx.block": { ja: "全ダメージ防ぐ", en: "Block all" },
+  "fx.block": { ja: "防御", en: "Block" },
   "fx.reflect": { ja: "反射", en: "Reflect" },
   "fx.pass": { ja: "受け流す", en: "Pass on" },
   "fx.heal": { ja: "回復", en: "Heal" },
