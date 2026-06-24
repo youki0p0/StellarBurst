@@ -1,7 +1,7 @@
 "use client";
 
 import type { AttackTarget, Card, CardColor } from "@/lib/types";
-import { localizeCardDescription, localizeCardName } from "@/lib/i18n";
+import { localizeCardName } from "@/lib/i18n";
 import { useLangStore, useT } from "@/store/i18n";
 import { CardArt } from "./CardArt";
 
@@ -122,17 +122,33 @@ export function CardView({
             <span className={`font-black tabular-nums text-neon-gold ${compact ? "text-xl" : "text-3xl"}`}>
               {card.damage}
             </span>
-            {!compact && <span className="text-[9px] font-bold text-neon-gold/70">{t("card.dmg")}</span>}
+            <span className={`font-bold text-neon-gold/70 ${compact ? "text-[8px]" : "text-[9px]"}`}>
+              {t("card.dmg")}
+            </span>
           </div>
         )}
-        {card.fatal && <div className="text-xs font-black text-neon-pink">FATAL</div>}
+        {card.fatal && (
+          <div className={`font-black text-neon-pink ${compact ? "text-[11px]" : "text-sm"}`}>
+            {t("fx.fatal")}
+          </div>
+        )}
+        {!isAttack && (
+          <div className={`font-bold leading-tight text-neon-cyan ${compact ? "text-[10px]" : "text-xs"}`}>
+            {effectLabel(card, t)}
+          </div>
+        )}
       </div>
-
-      {!compact && !isAttack && (
-        <p className="line-clamp-2 text-[9px] leading-snug text-slate-400">
-          {localizeCardDescription(card, lang)}
-        </p>
-      )}
     </Tag>
   );
+}
+
+/** Plain-language effect for a defense/special card (incl. its magnitude). */
+function effectLabel(card: Card, t: (k: string) => string): string {
+  if (card.kind === "defense") return t(`fx.${card.defense}`);
+  if (card.kind === "special") {
+    if (card.special === "heal") return `${t("fx.heal")} +${card.value ?? 20}`;
+    if (card.special === "slip_damage") return `${t("fx.slip_damage")} ${card.value ?? 10}×3`;
+    return t(`fx.${card.special}`);
+  }
+  return "";
 }
